@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Upload Students</title>
+</head>
+<body>
+    <h1>Upload Students</h1>
+    <form id="uploadForm" action="/students" method="POST" enctype="multipart/form-data">
+        <label for="name">Name:</label>
+        <input type="text" id="name" name="name" required><br><br>
+        
+        <label for="term1">Term 1 Grade:</label>
+        <input type="number" id="term1" name="term1" required><br><br>
+        
+        <label for="term2">Term 2 Grade:</label>
+        <input type="number" id="term2" name="term2" required><br><br>
+        
+        <label for="term3">Term 3 Grade:</label>
+        <input type="number" id="term3" name="term3" required><br><br>
+        
+        <input type="submit" value="Upload">
+    </form>
+    <script>
+        document.getElementById('uploadForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            var form = event.target;
+            var formData = new FormData(form);
+
+            var request = new XMLHttpRequest();
+            request.open(form.method, form.action, true);
+            request.onload = function() {
+                if (request.status === 200) {
+                    alert('Student uploaded successfully!');
+                    form.reset();
+                } else {
+                    alert('An error occurred while uploading the student.');
+                }
+            };
+            request.send(formData);
+        });
+    </script>
+</body>
+</html>
