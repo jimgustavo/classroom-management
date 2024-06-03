@@ -1,3 +1,5 @@
+//  models/student.go
+
 package models
 
 import "github.com/lib/pq"
@@ -10,18 +12,15 @@ type Student struct {
 	// Add any other fields related to students here
 }
 
-// StudentWithClassroomAndSubjects represents a student along with their classroom and assigned subjects
-/*
-type StudentWithClassroomAndSubjects struct {
-	ID               int       `json:"id"`
-	Name             string    `json:"name"`
-	Classroom        string    `json:"classroom"`
-	AssignedSubjects []Subject `json:"assigned_subjects"`
-}
-*/
 type StudentWithClassroomAndSubjects struct {
 	ID               int            `json:"id"`
 	Name             string         `json:"name"`
 	Classroom        string         `json:"classroom"`
 	AssignedSubjects pq.StringArray `json:"assigned_subjects"`
+}
+
+// StudentSubject represents the many-to-many relationship between students and subjects
+type StudentSubject struct {
+	StudentID int `json:"student_id"`
+	SubjectID int `json:"subject_id"`
 }

@@ -13,96 +13,92 @@ import (
 	"github.com/jimgustavo/classroom-management/models"
 )
 
-// AddGrade handles the request to add a grade to a specific student in a specific subject and label.
-func AddGrade(w http.ResponseWriter, r *http.Request) {
+// UploadGrades handles the uploading of grades for a classroom
+func UploadGradesToClassroom(w http.ResponseWriter, r *http.Request) {
+	var gradesData models.GradesData
+
+	// Parse the JSON request body
+	err := json.NewDecoder(r.Body).Decode(&gradesData)
+	if err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		log.Printf("Error parsing request payload: %v\n", err)
+		return
+	}
+
+	log.Printf("Grades Data received: %+v\n", gradesData)
+
+	// Extract the classroom ID from the request URL
 	vars := mux.Vars(r)
-	studentID, err := strconv.Atoi(vars["studentID"])
+	classroomID, err := strconv.Atoi(vars["classroomID"])
 	if err != nil {
-		http.Error(w, "Invalid student ID", http.StatusBadRequest)
+		http.Error(w, "Invalid classroom ID", http.StatusBadRequest)
+		log.Printf("Error parsing classroom ID: %v\n", err)
 		return
 	}
 
-	subjectID, err := strconv.Atoi(vars["subjectID"])
+	// Iterate over the grades and insert them into the database
+	for _, studentGrades := range gradesData.Grades {
+		for _, grade := range studentGrades.Grades {
+			err := database.InsertGradesInClassroom(studentGrades.StudentID, studentGrades.SubjectID, grade.Label, grade.Grade, classroomID)
+			if err != nil {
+				http.Error(w, "Error inserting grades", http.StatusInternalServerError)
+				log.Printf("Error inserting grade: %v\n", err)
+				return
+			}
+		}
+	}
+
+	// Prepare the JSON response
+	response := models.Response{
+		Message: "Grades uploaded successfully",
+	}
+	responseData, err := json.Marshal(response)
 	if err != nil {
-		http.Error(w, "Invalid subject ID", http.StatusBadRequest)
+		http.Error(w, "Error creating response", http.StatusInternalServerError)
+		log.Printf("Error creating response: %v\n", err)
 		return
 	}
 
-	var grade models.Grade
-	// Decode the request body into the grade model
-	err = json.NewDecoder(r.Body).Decode(&grade)
-	if err != nil {
-		http.Error(w, "Failed to decode request body", http.StatusBadRequest)
-		return
-	}
-
-	// Assign student ID and subject ID to the grade
-	grade.StudentID = studentID
-	grade.SubjectID = subjectID
-
-	// Call the database function to add the grade
-	err = database.AddGrade(grade)
-	if err != nil {
-		http.Error(w, "Failed to add grade to database", http.StatusInternalServerError)
-		return
-	}
-
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
+	w.Write(responseData)
+
+	log.Println("Grades uploaded successfully")
 }
 
-// GetAllStudentsWithGrades retrieves all students with their grades, labels, subjects, and classrooms.
-func GetAllStudentsWithGrades(w http.ResponseWriter, r *http.Request) {
-	// Log that the function has started
-	log.Println("Retrieving all students with grades")
-
-	// Call the database function to get all students with their grades, labels, subjects, and classrooms
-	studentGradeInfo, err := database.GetAllStudentsWithGrades()
-	if err != nil {
-		// Log the error if retrieval fails
-		log.Println("Failed to retrieve students with grades:", err)
-		http.Error(w, "Failed to retrieve students with grades", http.StatusInternalServerError)
-		return
-	}
-
-	// Log that retrieval was successful
-	log.Println("Students with grades retrieved successfully")
-
-	// Encode the response as JSON and write it to the response writer
-	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(studentGradeInfo)
-	if err != nil {
-		// Log the encoding error
-		log.Println("Failed to encode response:", err)
-		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
-		return
-	}
-}
-
-// GetGradeByStudentID handles the request to retrieve a JSON with the grade, label, subject, and classroom by providing the student ID.
-func GetGradeByStudentID(w http.ResponseWriter, r *http.Request) {
-	// Parse studentID from URL parameter
+// Handler function for fetching grades by classroom ID
+func GetGradesByClassroomID(w http.ResponseWriter, r *http.Request) {
+	// Extract the classroom ID from the URL path
 	vars := mux.Vars(r)
-	studentID, err := strconv.Atoi(vars["studentID"])
+	classroomID := vars["classroomID"]
+
+	// Convert classroomID to an integer (assuming it's an integer)
+	id, err := strconv.Atoi(classroomID)
 	if err != nil {
-		http.Error(w, "Invalid student ID", http.StatusBadRequest)
+		http.Error(w, "Invalid classroom ID", http.StatusBadRequest)
 		return
 	}
 
-	// Call the database function to retrieve the grade information
-	gradeInfo, err := database.GetGradeByStudentID(studentID)
+	// Fetch grades for the specified classroom ID
+	gradesData, err := database.FetchGradesByClassroomID(id)
 	if err != nil {
-		http.Error(w, "Failed to retrieve grade information", http.StatusInternalServerError)
+		http.Error(w, "Error fetching grades", http.StatusInternalServerError)
+		log.Printf("Error fetching grades: %v\n", err)
 		return
 	}
 
-	// Marshal the grade information into JSON
-	gradeJSON, err := json.Marshal(gradeInfo)
+	// Convert gradesData to JSON
+	responseData, err := json.Marshal(gradesData)
 	if err != nil {
-		http.Error(w, "Failed to marshal JSON", http.StatusInternalServerError)
+		http.Error(w, "Error creating response", http.StatusInternalServerError)
+		log.Printf("Error creating response: %v\n", err)
 		return
 	}
 
-	// Write the JSON response
+	// Write response
 	w.Header().Set("Content-Type", "application/json")
-	w.Write(gradeJSON)
+	w.WriteHeader(http.StatusOK)
+	w.Write(responseData)
+
+	log.Println("Grades retrieved successfully")
 }

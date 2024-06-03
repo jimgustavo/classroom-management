@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -28,6 +29,36 @@ func CreateClassroom(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(classroom)
+}
+
+func AddSubjectToClassroom(w http.ResponseWriter, r *http.Request) {
+	// Parse classroomID from URL parameter
+	vars := mux.Vars(r)
+	classroomID, err := strconv.Atoi(vars["classroomID"])
+	if err != nil {
+		http.Error(w, "Invalid classroom ID", http.StatusBadRequest)
+		return
+	}
+
+	// Parse subjectID from URL parameter
+	subjectID, err := strconv.Atoi(vars["subjectID"])
+	if err != nil {
+		http.Error(w, "Invalid subject ID", http.StatusBadRequest)
+		return
+	}
+
+	log.Printf("Adding subject %d to classroom %d", subjectID, classroomID) // Log before calling database function
+
+	// Add subject to classroom without request body
+	if err := database.AddSubjectToClassroom(classroomID, subjectID); err != nil {
+		log.Println("Failed to add subject to classroom:", err) // Log the error
+		http.Error(w, "Failed to add subject to classroom", http.StatusInternalServerError)
+		return
+	}
+
+	log.Println("Subject added to classroom successfully")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]string{"message": "Subject added to classroom successfully"})
 }
 
 // GetAllClassrooms retrieves all classrooms
@@ -59,51 +90,32 @@ func GetClassroom(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(classroom)
 }
 
-/*
-// GetSubjectsByClassroomID retrieves subjects assigned to a classroom
-func GetSubjectsByClassroomID(w http.ResponseWriter, r *http.Request) {
-	// Get the classroom ID from the request parameters
-	params := mux.Vars(r)
-	classroomID := params["classroomID"]
-
-	// Get subjects assigned to the specified classroom from the database
-	subjects, err := database.GetSubjectsByClassroomID(classroomID)
+func GetSubjectsInClassroom(w http.ResponseWriter, r *http.Request) {
+	// Parse classroomID from URL parameter
+	vars := mux.Vars(r)
+	classroomID, err := strconv.Atoi(vars["classroomID"])
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Invalid classroom ID", http.StatusBadRequest)
 		return
 	}
 
-	// Set Content-Type header to application/json
-	w.Header().Set("Content-Type", "application/json")
-
-	// Encode subjects into JSON and write response
-	if err := json.NewEncoder(w).Encode(subjects); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-}
-*/
-// GetSubjectsByClassroomID retrieves subjects assigned to a classroom along with students assigned to each subject by classroom ID
-func GetSubjectsByClassroomID(w http.ResponseWriter, r *http.Request) {
-	// Get the classroom ID from the request parameters
-	params := mux.Vars(r)
-	classroomID := params["classroomID"]
-
-	// Get subjects assigned to the specified classroom along with students assigned to each subject
-	subjectsWithStudents, err := database.GetSubjectsAndStudentsByClassroomID(classroomID)
+	// Get subjects in classroom
+	subjects, err := database.GetSubjectsInClassroom(classroomID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Failed to get subjects in classroom", http.StatusInternalServerError)
 		return
 	}
 
-	// Set Content-Type header to application/json
+	// Marshal subjects to JSON
+	jsonSubjects, err := json.Marshal(subjects)
+	if err != nil {
+		http.Error(w, "Failed to marshal subjects to JSON", http.StatusInternalServerError)
+		return
+	}
+
+	// Write JSON response
 	w.Header().Set("Content-Type", "application/json")
-
-	// Encode subjectsWithStudents into JSON and write response
-	if err := json.NewEncoder(w).Encode(subjectsWithStudents); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	w.Write(jsonSubjects)
 }
 
 // Handler function to get students by classroom ID

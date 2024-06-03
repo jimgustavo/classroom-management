@@ -1,0 +1,295 @@
+/*  static/styles.css  */
+
+/* Resetting default browser styles */
+html, body, h1, h2, h3, h4, h5, h6, p, ul, li {
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: Arial, sans-serif;
+}
+
+.container {
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+nav ul {
+    list-style-type: none;
+}
+
+nav ul li {
+    display: inline-block;
+    margin-left: 20px;
+}
+
+nav ul li a {
+    text-decoration: none;
+    color: black;
+}
+
+main {
+    margin-top: 20px;
+}
+
+#hero {
+    position: relative;
+    height: 100vh;
+    background-size: cover;
+    background-position: center;
+    color: black;
+}
+
+.background-image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url('path/to/your/image.jpg'); /* Replace 'path/to/your/image.jpg' with your actual image path */
+    opacity: 0.5; /* Adjust the opacity as needed */
+    z-index: -1;
+}
+
+.overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5); /* Adjust the color and opacity as needed */
+}
+
+.hero-content {
+    position: relative;
+    z-index: 1;
+    padding: 50px;
+}
+
+#services {
+    margin-top: 50px;
+}
+
+#services ul {
+    list-style-type: none;
+}
+
+#services ul li {
+    margin-bottom: 10px;
+}
+
+footer {
+    margin-top: 50px;
+    text-align: center;
+}
+
+/* Add this CSS at the end of your styles.css file */
+
+#reviews {
+    margin-top: 50px;
+}
+
+.review-cards {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-around;
+    margin-top: 20px;
+}
+
+.review-card {
+    width: 300px;
+    margin-bottom: 20px;
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+}
+
+.review-img {
+    text-align: center;
+}
+
+.review-img img {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.review-text {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.create-classroom-container {
+    margin-top: 50px;
+    text-align: center;
+}
+
+.create-classroom-container form {
+    display: inline-block;
+    text-align: left;
+}
+
+.create-classroom-container label {
+    display: block;
+    margin-bottom: 5px;
+}
+
+.create-classroom-container input[type="text"],
+.create-classroom-container textarea {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+}
+
+.create-classroom-container button {
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.create-classroom-container button:hover {
+    background-color: #0056b3;
+}
+
+/* Styles for classroom management */
+
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f4;
+}
+
+h1 {
+    text-align: center;
+}
+
+ul {
+    list-style: none;
+    padding: 0;
+}
+
+li {
+    padding: 10px;
+    border-bottom: 1px solid #ccc;
+}
+
+li:last-child {
+    border-bottom: none;
+}
+.section-container {
+    display: flex;
+    float: center;
+    flex: auto;
+    flex-wrap: wrap;
+    flex-direction: 'row';
+    align-items:center;
+    width: 90%;
+    margin: 20px auto;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+/* Add this CSS at the end of your styles.css file */
+
+/* Styles for classroom cards */
+.classroom-container {
+    display: flex;
+    float: center;
+    flex: auto;
+    flex-wrap: wrap;
+    flex-direction: 'row';
+    align-items:center;
+    width: 90%;
+    margin: 20px auto;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.classroom-cards {
+    width: 200px;
+    margin-bottom: 20px;
+    margin-right: 20px;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    box-sizing: border-box;
+}
+
+/* Modal */
+/* Basic modal styles */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.5); /* Black w/ opacity */
+}
+
+.modal-content {
+    position: relative;
+    background-color: #fff;
+    margin: auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 500px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    animation: animateModal 0.4s;
+}
+
+@keyframes animateModal {
+    from { opacity: 0; transform: translateY(-50px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Close button */
+.close {
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    color: #aaa;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close:hover,
+.close:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+/* Modal footer */
+.modal-footer {
+    margin-top: 15px;
+    text-align: right;
+}
+
+/* Button to open modal */
+#open-modal-btn {
+    margin: 20px;
+    padding: 10px 20px;
+    font-size: 16px;
+}

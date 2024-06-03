@@ -111,3 +111,39 @@ func DeleteSubject(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusNoContent)
 }
+
+// GetSubjectsByStudentIDHandler retrieves all subjects associated with a student by student ID
+func GetSubjectsByStudentID(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	studentID, err := strconv.Atoi(params["studentID"])
+	if err != nil {
+		http.Error(w, "Invalid student ID", http.StatusBadRequest)
+		return
+	}
+
+	subjects, err := database.GetSubjectsByStudentID(studentID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(subjects)
+}
+
+// DeleteSubjectsByClassroomIDHandler removes all subjects associated with a classroom by classroom ID
+func DeleteSubjectsByClassroomID(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	classroomID, err := strconv.Atoi(params["classroomID"])
+	if err != nil {
+		http.Error(w, "Invalid classroom ID", http.StatusBadRequest)
+		return
+	}
+
+	err = database.DeleteSubjectsByClassroomID(classroomID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}

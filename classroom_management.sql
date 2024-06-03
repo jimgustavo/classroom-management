@@ -29,7 +29,6 @@ CREATE TABLE student_subjects (
 -- Table to store grade labels for each classroom and subject
 CREATE TABLE grade_labels (
     id SERIAL PRIMARY KEY,
-    subject_id INT REFERENCES subjects(id),
     label VARCHAR(255) -- Label for the grade (e.g., "1st input", "2nd input", "lesson", "quiz", etc.)
 );
 
@@ -54,10 +53,11 @@ CREATE TABLE classroom_subjects (
 
 -- Table to store grade inputs for each student on each assigned subject
 CREATE TABLE grades (
-    id SERIAL PRIMARY KEY,
-    student_id INT REFERENCES students(id),
-    subject_id INT REFERENCES subjects(id),
-    label_id INT REFERENCES grade_labels(id), -- Reference to the grade label ID
-    grade FLOAT -- Assuming grade will be stored as a floating-point number
+    student_id INT,
+    subject_id INT,
+    label VARCHAR(50),
+    grade VARCHAR(10),
+    classroom_id INT,
+    PRIMARY KEY (student_id, subject_id, label)
 );
 
