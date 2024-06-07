@@ -38,12 +38,14 @@ func UploadGradesToClassroom(w http.ResponseWriter, r *http.Request) {
 
 	// Iterate over the grades and insert them into the database
 	for _, studentGrades := range gradesData.Grades {
-		for _, grade := range studentGrades.Grades {
-			err := database.InsertGradesInClassroom(studentGrades.StudentID, studentGrades.SubjectID, grade.Label, grade.Grade, classroomID)
-			if err != nil {
-				http.Error(w, "Error inserting grades", http.StatusInternalServerError)
-				log.Printf("Error inserting grade: %v\n", err)
-				return
+		for _, term := range studentGrades.Terms {
+			for _, grade := range term.Grades {
+				err := database.InsertGradesInClassroom(studentGrades.StudentID, studentGrades.SubjectID, term.Term, grade.LabelID, grade.Grade, classroomID)
+				if err != nil {
+					http.Error(w, "Error inserting grades", http.StatusInternalServerError)
+					log.Printf("Error inserting grade: %v\n", err)
+					return
+				}
 			}
 		}
 	}
@@ -88,12 +90,63 @@ func GetGradesByClassroomID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Convert gradesData to JSON
+	responseData := gradesDataToJSON(gradesData)
+
+	// Write response
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(responseData)
+
+	log.Println("Grades retrieved successfully")
+}
+
+// Convert gradesData to JSON, handle null case
+func gradesDataToJSON(gradesData models.GradesData) []byte {
+	if len(gradesData.Grades) == 0 {
+		// Return an empty array if no grades are found
+		return []byte("[]")
+	}
+
+	// Convert gradesData to JSON
 	responseData, err := json.Marshal(gradesData)
 	if err != nil {
-		http.Error(w, "Error creating response", http.StatusInternalServerError)
 		log.Printf("Error creating response: %v\n", err)
+		return []byte("[]") // Return an empty array if JSON marshaling fails
+	}
+	return responseData
+}
+
+// Handler function for fetching grades by classroom ID and term ID
+func GetGradesByClassroomIDAndTermID(w http.ResponseWriter, r *http.Request) {
+	// Extract the classroom ID and term ID from the URL path
+	vars := mux.Vars(r)
+	classroomID := vars["classroomID"]
+	termID := vars["termID"]
+
+	// Convert classroomID to an integer (assuming it's an integer)
+	id, err := strconv.Atoi(classroomID)
+	if err != nil {
+		http.Error(w, "Invalid classroom ID", http.StatusBadRequest)
 		return
 	}
+
+	// Convert termID to an integer (assuming it's an integer)
+	termIDInt, err := strconv.Atoi(termID)
+	if err != nil {
+		http.Error(w, "Invalid term ID", http.StatusBadRequest)
+		return
+	}
+
+	// Fetch grades for the specified classroom ID and term ID
+	gradesData, err := database.FetchGradesByClassroomIDAndTermID(id, termIDInt)
+	if err != nil {
+		http.Error(w, "Error fetching grades", http.StatusInternalServerError)
+		log.Printf("Error fetching grades: %v\n", err)
+		return
+	}
+
+	// Convert gradesData to JSON
+	responseData := gradesDataToJSON(gradesData)
 
 	// Write response
 	w.Header().Set("Content-Type", "application/json")

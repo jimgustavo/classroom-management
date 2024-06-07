@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -99,20 +100,26 @@ func DeleteGradeLabel(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-// AssignGradeLabelToSubject assigns a grade label to a subject
-func AssignGradeLabelToSubject(w http.ResponseWriter, r *http.Request) {
+// AssignGradeLabelToSubject assigns a grade label to a subject for a specific term
+func AssignGradeLabelToSubjectByTerm(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	subjectID := vars["subjectID"]
 	gradeLabelIDStr := vars["gradeLabelID"] // Extract grade label ID from URL path
+	termIDStr := vars["termID"]             // Extract term ID from URL path
 
-	// Convert gradeLabelIDStr to int
+	// Convert gradeLabelIDStr and termIDStr to int
 	gradeLabelID, err := strconv.Atoi(gradeLabelIDStr)
 	if err != nil {
 		http.Error(w, "Invalid grade label ID", http.StatusBadRequest)
 		return
 	}
+	termID, err := strconv.Atoi(termIDStr)
+	if err != nil {
+		http.Error(w, "Invalid term ID", http.StatusBadRequest)
+		return
+	}
 
-	if err := database.AssignGradeLabelToSubject(subjectID, gradeLabelID); err != nil {
+	if err := database.AssignGradeLabelToSubjectByTerm(subjectID, gradeLabelID, termID); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -120,12 +127,28 @@ func AssignGradeLabelToSubject(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
-// GetGradeLabelsForSubject retrieves all grade labels assigned to a subject
+// GetGradeLabelsForSubject retrieves all grade labels assigned to a subject for a specific term
 func GetGradeLabelsForSubject(w http.ResponseWriter, r *http.Request) {
+	log.Printf("hit the endpoint: GetGradeLabelsForSubject")
 	vars := mux.Vars(r)
-	subjectID := vars["subjectID"]
+	subjectIDStr := vars["subjectID"]
+	termIDStr := vars["termID"] // Extract term ID from URL path
 
-	gradeLabels, err := database.GetGradeLabelsForSubject(subjectID)
+	// Convert termIDStr to int
+	subjectID, err := strconv.Atoi(subjectIDStr)
+	if err != nil {
+		http.Error(w, "Invalid subject ID", http.StatusBadRequest)
+		return
+	}
+
+	// Convert termIDStr to int
+	termID, err := strconv.Atoi(termIDStr)
+	if err != nil {
+		http.Error(w, "Invalid term ID", http.StatusBadRequest)
+		return
+	}
+
+	gradeLabels, err := database.GetGradeLabelsForSubject(subjectID, termID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

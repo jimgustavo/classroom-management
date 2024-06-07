@@ -3,7 +3,10 @@
 package database
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
+	"log"
 
 	"github.com/jimgustavo/classroom-management/models"
 )
@@ -114,6 +117,87 @@ func UpdateClassroom(id int, updatedClassroom *models.Classroom) error {
 	return nil
 }
 
+// AddSubjectToClassroom adds a subject to a classroom
+func AddSubjectToClassroom(classroomID, subjectID int) error {
+	log.Printf("Attempting to add subject %d to classroom %d", subjectID, classroomID)
+
+	// Start a transaction
+	tx, err := db.Begin()
+	if err != nil {
+		log.Println("Failed to begin transaction:", err)
+		return err
+	}
+	defer func() {
+		if err != nil {
+			// Rollback the transaction if there's an error
+			tx.Rollback()
+		} else {
+			// Commit the transaction if successful
+			tx.Commit()
+		}
+	}()
+
+	// Add subject to classroom
+	_, err = tx.Exec("INSERT INTO classroom_subjects (classroom_id, subject_id) VALUES ($1, $2)", classroomID, subjectID)
+	if err != nil {
+		log.Println("Failed to execute SQL query:", err)
+		return err
+	}
+
+	return nil
+}
+
+func GetSubjectsInClassroom(classroomID int) ([]models.SubjectWithGradeLabels, error) {
+	log.Printf("Retrieving subjects with grade labels for classroom %d", classroomID)
+
+	query := `
+        SELECT subjects.id, subjects.name, 
+               COALESCE(json_agg(json_build_object('id', grade_labels.id, 'label', grade_labels.label, 'term_id', grade_labels_subjects.term_id)) FILTER (WHERE grade_labels.id IS NOT NULL), '[]')
+        FROM subjects
+        LEFT JOIN classroom_subjects ON subjects.id = classroom_subjects.subject_id
+        LEFT JOIN grade_labels_subjects ON subjects.id = grade_labels_subjects.subject_id
+        LEFT JOIN grade_labels ON grade_labels.id = grade_labels_subjects.grade_label_id
+        WHERE classroom_subjects.classroom_id = $1
+        GROUP BY subjects.id, subjects.name
+    `
+
+	rows, err := db.Query(query, classroomID)
+	if err != nil {
+		log.Println("Failed to execute SQL query:", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	var subjects []models.SubjectWithGradeLabels
+	for rows.Next() {
+		var subjectID int
+		var subjectName string
+		var gradeLabels json.RawMessage
+		if err := rows.Scan(&subjectID, &subjectName, &gradeLabels); err != nil {
+			log.Println("Failed to scan row:", err)
+			return nil, err
+		}
+
+		var gradeLabelsParsed []models.GradeLabelTerm
+		if err := json.Unmarshal(gradeLabels, &gradeLabelsParsed); err != nil {
+			log.Println("Failed to unmarshal grade labels:", err)
+			return nil, err
+		}
+
+		subjects = append(subjects, models.SubjectWithGradeLabels{
+			ID:          subjectID,
+			Name:        subjectName,
+			GradeLabels: gradeLabelsParsed,
+		})
+	}
+	if err := rows.Err(); err != nil {
+		log.Println("Error occurred while iterating through rows:", err)
+		return nil, err
+	}
+
+	return subjects, nil
+}
+
 // DeleteClassroom deletes a specific classroom from the database
 func DeleteClassroom(id int) error {
 	if db == nil {
@@ -126,5 +210,34 @@ func DeleteClassroom(id int) error {
 		return err
 	}
 
+	return nil
+}
+
+// UnrollStudentFromClassroom removes a student from a classroom
+func UnrollStudentFromClassroom(classroomID, studentID string) error {
+	query := `UPDATE students SET classroom_id = NULL WHERE id = $1 AND classroom_id = $2`
+	result, err := db.Exec(query, studentID, classroomID)
+	if err != nil {
+		log.Printf("error executing query: %s with classroomID: %s, studentID: %s", query, classroomID, studentID)
+		return fmt.Errorf("error unrolling student from classroom: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		log.Printf("error getting rows affected: %v", err)
+		return fmt.Errorf("error unrolling student from classroom: %w", err)
+	}
+
+	log.Printf("rows affected: %d", rowsAffected)
+	return nil
+}
+
+// RemoveSubjectFromClassroom removes a subject from a classroom
+func RemoveSubjectFromClassroom(classroomID, subjectID string) error {
+	query := `DELETE FROM classroom_subjects WHERE classroom_id = $1 AND subject_id = $2`
+	_, err := db.Exec(query, classroomID, subjectID)
+	if err != nil {
+		return fmt.Errorf("error removing subject from classroom: %w", err)
+	}
 	return nil
 }

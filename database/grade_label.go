@@ -5,6 +5,7 @@ package database
 import (
 	"database/sql"
 	"errors"
+	"log"
 
 	"github.com/jimgustavo/classroom-management/models"
 )
@@ -78,20 +79,21 @@ func DeleteGradeLabel(id string) error {
 	return nil
 }
 
-// AssignGradeLabelToSubject assigns a grade label to a subject in the database
-func AssignGradeLabelToSubject(subjectID string, gradeLabelID int) error {
-	_, err := db.Exec("INSERT INTO grade_labels_subjects (subject_id, grade_label_id) VALUES ($1, $2)", subjectID, gradeLabelID)
+// AssignGradeLabelToSubject assigns a grade label to a subject for a specific term in the database
+func AssignGradeLabelToSubjectByTerm(subjectID string, gradeLabelID, termID int) error {
+	_, err := db.Exec("INSERT INTO grade_labels_subjects (subject_id, grade_label_id, term_id) VALUES ($1, $2, $3)", subjectID, gradeLabelID, termID)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-// GetGradeLabelsForSubject retrieves all grade labels assigned to a subject from the database
-func GetGradeLabelsForSubject(subjectID string) ([]models.GradeLabel, error) {
+// GetGradeLabelsForSubject retrieves all grade labels assigned to a subject for a specific term from the database
+func GetGradeLabelsForSubject(subjectID int, termID int) ([]models.GradeLabel, error) {
+	log.Printf("Attempting to add subject %d to classroom %d", subjectID, termID)
 	var gradeLabels []models.GradeLabel
 
-	rows, err := db.Query("SELECT id, label FROM grade_labels WHERE id IN (SELECT grade_label_id FROM grade_labels_subjects WHERE subject_id = $1)", subjectID)
+	rows, err := db.Query("SELECT id, label FROM grade_labels WHERE id IN (SELECT grade_label_id FROM grade_labels_subjects WHERE subject_id = $1 AND term_id = $2)", subjectID, termID)
 	if err != nil {
 		return nil, err
 	}

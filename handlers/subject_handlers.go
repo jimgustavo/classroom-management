@@ -130,17 +130,32 @@ func GetSubjectsByStudentID(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(subjects)
 }
 
-// DeleteSubjectsByClassroomIDHandler removes all subjects associated with a classroom by classroom ID
-func DeleteSubjectsByClassroomID(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
-	classroomID, err := strconv.Atoi(params["classroomID"])
+// RemoveGradeLabelFromSubjectByTerm removes a grade label from a subject for a specific term
+func RemoveGradeLabelFromSubjectByTerm(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	subjectIDStr := vars["subjectID"]
+	gradeLabelIDStr := vars["gradeLabelID"]
+	termIDStr := vars["termID"]
+
+	// Convert subjectIDStr, gradeLabelIDStr and termIDStr to int
+	subjectID, err := strconv.Atoi(subjectIDStr)
 	if err != nil {
-		http.Error(w, "Invalid classroom ID", http.StatusBadRequest)
+		http.Error(w, "Invalid grade label ID", http.StatusBadRequest)
 		return
 	}
 
-	err = database.DeleteSubjectsByClassroomID(classroomID)
+	gradeLabelID, err := strconv.Atoi(gradeLabelIDStr)
 	if err != nil {
+		http.Error(w, "Invalid grade label ID", http.StatusBadRequest)
+		return
+	}
+	termID, err := strconv.Atoi(termIDStr)
+	if err != nil {
+		http.Error(w, "Invalid term ID", http.StatusBadRequest)
+		return
+	}
+
+	if err := database.RemoveGradeLabelFromSubjectByTerm(subjectID, gradeLabelID, termID); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

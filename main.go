@@ -36,13 +36,15 @@ func main() {
 	router.HandleFunc("/classrooms/{classroomID}/subjects", handlers.GetSubjectsInClassroom).Methods("GET")
 	router.HandleFunc("/classrooms/{classroom_id}/students", handlers.GetStudentsByClassroom).Methods("GET")
 	router.HandleFunc("/classrooms/{classroomID}/grades/get", handlers.GetGradesByClassroomID).Methods("GET")
+	router.HandleFunc("/classrooms/{classroomID}/terms/{termID}/grades", handlers.GetGradesByClassroomIDAndTermID).Methods("GET")
 	router.HandleFunc("/classrooms", handlers.CreateClassroom).Methods("POST")
 	router.HandleFunc("/classrooms/{classroomID}/subject/{subjectID}", handlers.AddSubjectToClassroom).Methods("POST")
 	router.HandleFunc("/classrooms/{classroomID}/grades", handlers.UploadGradesToClassroom).Methods("POST")
-	router.HandleFunc("/classrooms/{classroomID}/upload-students", handlers.UploadStudentsFromExcel).Methods("POST") // New route for uploading students from an Excel file
+	router.HandleFunc("/classrooms/{classroomID}/upload-students", handlers.UploadStudentsFromExcel).Methods("POST") // for uploading students from an Excel file
 	router.HandleFunc("/classrooms/{id}", handlers.UpdateClassroom).Methods("PUT")
 	router.HandleFunc("/classrooms/{id}", handlers.DeleteClassroom).Methods("DELETE")
-	router.HandleFunc("/classrooms/{classroomID}/subjects", handlers.DeleteSubjectsByClassroomID).Methods("DELETE")
+	router.HandleFunc("/classrooms/{classroomID}/students/{studentID}", handlers.UnrollStudentFromClassroom).Methods("DELETE")
+	router.HandleFunc("/classrooms/{classroomID}/subjects/{subjectID}", handlers.RemoveSubjectFromClassroom).Methods("DELETE")
 
 	// Student routes
 	router.HandleFunc("/students", handlers.GetAllStudents).Methods("GET")
@@ -57,11 +59,13 @@ func main() {
 	router.HandleFunc("/subjects", handlers.GetAllSubjects).Methods("GET")
 	router.HandleFunc("/subjects/{id}", handlers.GetSubject).Methods("GET")
 	router.HandleFunc("/subjects/{subjectID}/students", handlers.GetStudentsBySubjectID).Methods("GET")
-	router.HandleFunc("/subjects/{subjectID}/grade-labels", handlers.GetGradeLabelsForSubject).Methods("GET")
+	router.HandleFunc("/subjects/{subjectID}/terms", handlers.GetTermsBySubjectID).Methods("GET")
+	router.HandleFunc("/subjects/{subjectID}/terms/{termID}/grade-labels", handlers.GetGradeLabelsForSubject).Methods("GET")
 	router.HandleFunc("/subjects", handlers.CreateSubject).Methods("POST")
-	router.HandleFunc("/subjects/{subjectID}/grade-labels/{gradeLabelID}", handlers.AssignGradeLabelToSubject).Methods("POST") // They are already linked from the creation of the grade label
+	router.HandleFunc("/subjects/{subjectID}/grade-labels/{gradeLabelID}/terms/{termID}", handlers.AssignGradeLabelToSubjectByTerm).Methods("POST")
 	router.HandleFunc("/subjects/{id}", handlers.UpdateSubject).Methods("PUT")
 	router.HandleFunc("/subjects/{id}", handlers.DeleteSubject).Methods("DELETE")
+	router.HandleFunc("/subjects/{subjectID}/grade-labels/{gradeLabelID}/terms/{termID}", handlers.RemoveGradeLabelFromSubjectByTerm).Methods("DELETE")
 
 	// Grade Labels routes
 	router.HandleFunc("/grade-labels", handlers.CreateGradeLabel).Methods("POST")
@@ -69,6 +73,13 @@ func main() {
 	router.HandleFunc("/grade-labels/{id}", handlers.GetGradeLabel).Methods("GET")
 	router.HandleFunc("/grade-labels/{id}", handlers.UpdateGradeLabel).Methods("PUT")
 	router.HandleFunc("/grade-labels/{id}", handlers.DeleteGradeLabel).Methods("DELETE")
+
+	// Term routes
+	router.HandleFunc("/terms", handlers.GetAllTerms).Methods("GET")
+	router.HandleFunc("/terms/{id}", handlers.GetTerm).Methods("GET")
+	router.HandleFunc("/terms", handlers.CreateTerm).Methods("POST")
+	router.HandleFunc("/terms/{id}", handlers.UpdateTerm).Methods("PUT")
+	router.HandleFunc("/terms/{id}", handlers.DeleteTerm).Methods("DELETE")
 
 	// Serve static files from the "static" directory
 	router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
@@ -91,14 +102,16 @@ classroom-management/
 │   ├── grade_handlers.go
 │   ├── grade_label_handlers.go
 │ 	├── student_handlers.go
-│	  └── subject_handlers.go
+│ 	├── subject_handlers.go
+│	  └── term_handlers.go
 │
 ├── models/
 │   ├── classroom.go
 │   ├── grade_label.go
 │   ├── grade.go
 │	  ├── student.go
-│ 	└── subject.go
+│	  ├── subject.go
+│ 	└── term.go
 │
 └── database/
 │   ├── database.go
@@ -106,7 +119,8 @@ classroom-management/
 │   ├── grade_label.go
 │   ├── grade.go
 │	  ├── student.go
-│  	└── subject.go
+│	  ├── subject.go
+│  	└── term.go
 │
 │── classroom_management.sql
 │── go.mod
@@ -139,6 +153,10 @@ pwd
 
 \dt
 
+To show all the elements in terms:
+
+SELECT * FROM terms;
+
 To delete tables:
 
 DROP TABLE grades;
@@ -148,12 +166,15 @@ To create table:
 CREATE TABLE grades (
     student_id INT,
     subject_id INT,
+    term VARCHAR(50),
     label VARCHAR(50),
-    grade VARCHAR(10),
+    grade FLOAT,
     classroom_id INT,
-    PRIMARY KEY (student_id, subject_id, label)
+    PRIMARY KEY (student_id, subject_id, term, label),
+    CONSTRAINT fk_student FOREIGN KEY (student_id) REFERENCES students(id),
+    CONSTRAINT fk_subject FOREIGN KEY (subject_id) REFERENCES subjects(id),
+    CONSTRAINT fk_classroom FOREIGN KEY (classroom_id) REFERENCES classrooms(id)
 );
-
 
 ////////////////CURL COMMANDS///////////////////
 Create a Classroom:
@@ -176,104 +197,12 @@ curl -X POST -H "Content-Type: application/json" -d '{"name":"Mathematics"}' htt
 Assign a Subject to a Classroom:
 curl -X POST http://localhost:8080/classrooms/1/subject/7
 
-Retrieve all students with classroom and subjects assigned:
-curl -X GET http://localhost:8080/students/with-classroom-and-subjects
-
-Create a grade label:
-curl -X POST -H "Content-Type: application/json" -d '{"subject_id": 1, "label": "Final Term Quiz"}' http://localhost:8080/grade-labels
-
-Update a grade label:
-curl -X PUT -H "Content-Type: application/json" -d '{"subject_id": 1, "label": "First Input"}' http://localhost:8080/grade-labels/1
-
-curl -X POST http://localhost:8080/classrooms/1/subject/2
-
-curl -X POST -H "Content-Type: application/json" -d '{"gradeLabelIDs":[11,12,13,14]}' http://localhost:8080/classrooms/4/subject/2
-curl -X POST -H "Content-Type: application/json" -d '{"gradeLabelIDs":[]}' http://localhost:8080/classrooms/2/subject/1
-
 Upload students list from and xlsx file:
 curl -X POST "http://localhost:8080/classrooms/4/upload-students?startCell=B7&endCell=B21&sheetName=Matematicas" \
      -F "file=@./consolidado.xlsx"
 
-curl -X POST http://localhost:8080/classrooms/1/grades \
--H "Content-Type: application/json" \
--d '{
-  "grades": [
-    {
-      "student_id": 2,
-      "grades": [
-        {
-          "subject_id": 4,
-          "label_id": 6,
-          "grade": 85.0
-        },
-        {
-          "subject_id": 2,
-          "label_id": 11,
-          "grade": 90.0
-        }
-      ]
-    },
-    {
-      "student_id": 5,
-      "grades": [
-        {
-          "subject_id": 4,
-          "label_id": 6,
-          "grade": 75.0
-        },
-        {
-          "subject_id": 2,
-          "label_id": 11,
-          "grade": 80.0
-        }
-      ]
-    },
-    {
-      "student_id": 6,
-      "grades": [
-        {
-          "subject_id": 4,
-          "label_id": 6,
-          "grade": 65.0
-        },
-        {
-          "subject_id": 2,
-          "label_id": 11,
-          "grade": 70.0
-        }
-      ]
-    },
-    {
-      "student_id": 11,
-      "grades": [
-        {
-          "subject_id": 4,
-          "label_id": 6,
-          "grade": 85.0
-        },
-        {
-          "subject_id": 2,
-          "label_id": 11,
-          "grade": 88.0
-        }
-      ]
-    },
-    {
-      "student_id": 29,
-      "grades": [
-        {
-          "subject_id": 4,
-          "label_id": 6,
-          "grade": 95.0
-        },
-        {
-          "subject_id": 2,
-          "label_id": 11,
-          "grade": 93.0
-        }
-      ]
-    }
-  ]
-}'
 
+curl -X DELETE http://localhost:8080/subjects/1/grade-labels/5/terms/1
+
+curl -X POST http://localhost:8080/classrooms/1/subject/2
 */

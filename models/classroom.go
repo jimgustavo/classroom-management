@@ -1,3 +1,4 @@
+// models/classroom.go
 package models
 
 // Classroom represents a classroom entity

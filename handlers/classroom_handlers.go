@@ -31,6 +31,7 @@ func CreateClassroom(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(classroom)
 }
 
+// AddSubjectToClassroom adds a subject to a classroom
 func AddSubjectToClassroom(w http.ResponseWriter, r *http.Request) {
 	// Parse classroomID from URL parameter
 	vars := mux.Vars(r)
@@ -47,11 +48,11 @@ func AddSubjectToClassroom(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("Adding subject %d to classroom %d", subjectID, classroomID) // Log before calling database function
+	log.Printf("Adding subject %d to classroom %d", subjectID, classroomID)
 
-	// Add subject to classroom without request body
+	// Add subject to classroom
 	if err := database.AddSubjectToClassroom(classroomID, subjectID); err != nil {
-		log.Println("Failed to add subject to classroom:", err) // Log the error
+		log.Println("Failed to add subject to classroom:", err)
 		http.Error(w, "Failed to add subject to classroom", http.StatusInternalServerError)
 		return
 	}
@@ -91,7 +92,6 @@ func GetClassroom(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetSubjectsInClassroom(w http.ResponseWriter, r *http.Request) {
-	// Parse classroomID from URL parameter
 	vars := mux.Vars(r)
 	classroomID, err := strconv.Atoi(vars["classroomID"])
 	if err != nil {
@@ -99,21 +99,18 @@ func GetSubjectsInClassroom(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get subjects in classroom
 	subjects, err := database.GetSubjectsInClassroom(classroomID)
 	if err != nil {
 		http.Error(w, "Failed to get subjects in classroom", http.StatusInternalServerError)
 		return
 	}
 
-	// Marshal subjects to JSON
 	jsonSubjects, err := json.Marshal(subjects)
 	if err != nil {
 		http.Error(w, "Failed to marshal subjects to JSON", http.StatusInternalServerError)
 		return
 	}
 
-	// Write JSON response
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(jsonSubjects)
 }
@@ -175,6 +172,40 @@ func DeleteClassroom(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = database.DeleteClassroom(id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// UnrollStudentFromClassroom removes a student from a classroom
+func UnrollStudentFromClassroom(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	classroomID := vars["classroomID"]
+	studentID := vars["studentID"]
+
+	log.Printf("Attempting to unroll student %s from classroom %s", studentID, classroomID)
+
+	err := database.UnrollStudentFromClassroom(classroomID, studentID)
+	if err != nil {
+		log.Printf("Error unrolling student from classroom: %v", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	log.Printf("Successfully unrolled student %s from classroom %s", studentID, classroomID)
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// RemoveSubjectFromClassroom removes a subject from a classroom
+func RemoveSubjectFromClassroom(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	classroomID := vars["classroomID"]
+	subjectID := vars["subjectID"]
+
+	err := database.RemoveSubjectFromClassroom(classroomID, subjectID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

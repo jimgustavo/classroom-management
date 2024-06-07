@@ -4,10 +4,8 @@ package database
 
 import (
 	"errors"
-	"log"
 
 	"github.com/jimgustavo/classroom-management/models"
-	"github.com/lib/pq"
 )
 
 // CreateSubject inserts a new subject record into the database
@@ -169,99 +167,11 @@ func GetStudentsBySubjectID(subjectID int) ([]models.Student, error) {
 	return students, nil
 }
 
-// DeleteSubjectsByClassroomID removes all subjects associated with a classroom by classroom ID
-func DeleteSubjectsByClassroomID(classroomID int) error {
-	if db == nil {
-		return errors.New("database connection is not initialized")
-	}
-
-	query := `
-		DELETE FROM student_subjects
-		WHERE student_id IN (
-			SELECT id
-			FROM students
-			WHERE classroom_id = $1
-		)
-	`
-	_, err := db.Exec(query, classroomID)
+// RemoveGradeLabelFromSubjectByTerm removes a grade label from a subject for a specific term in the database
+func RemoveGradeLabelFromSubjectByTerm(subjectID, gradeLabelID, termID int) error {
+	_, err := db.Exec("DELETE FROM grade_labels_subjects WHERE subject_id = $1 AND grade_label_id = $2 AND term_id = $3", subjectID, gradeLabelID, termID)
 	if err != nil {
 		return err
 	}
-
 	return nil
-}
-
-func AddSubjectToClassroom(classroomID, subjectID int) error {
-	log.Printf("Attempting to add subject %d to classroom %d", subjectID, classroomID) // Log before database operation
-
-	// Start a transaction
-	tx, err := db.Begin()
-	if err != nil {
-		log.Println("Failed to begin transaction:", err)
-		return err
-	}
-	defer func() {
-		if err != nil {
-			// Rollback the transaction if there's an error
-			tx.Rollback()
-		} else {
-			// Commit the transaction if successful
-			tx.Commit()
-		}
-	}()
-
-	// Add subject to classroom
-	_, err = tx.Exec("INSERT INTO classroom_subjects (classroom_id, subject_id) VALUES ($1, $2)", classroomID, subjectID)
-	if err != nil {
-		log.Println("Failed to execute SQL query:", err)
-		return err
-	}
-
-	return nil
-}
-
-func GetSubjectsInClassroom(classroomID int) ([]models.SubjectWithGradeLabels, error) {
-	log.Printf("Retrieving subjects with grade labels for classroom %d", classroomID)
-
-	// Query to get subjects and their associated grade labels in classroom
-	query := `
-        SELECT subjects.id, subjects.name, COALESCE(ARRAY_AGG(COALESCE(grade_labels.label, '')), '{}')
-        FROM subjects
-        LEFT JOIN classroom_subjects ON subjects.id = classroom_subjects.subject_id
-        LEFT JOIN grade_labels_subjects ON subjects.id = grade_labels_subjects.subject_id
-        LEFT JOIN grade_labels ON grade_labels.id = grade_labels_subjects.grade_label_id
-        WHERE classroom_subjects.classroom_id = $1
-        GROUP BY subjects.id, subjects.name
-    `
-
-	rows, err := db.Query(query, classroomID)
-	if err != nil {
-		log.Println("Failed to execute SQL query:", err)
-		return nil, err
-	}
-	defer rows.Close()
-
-	var subjects []models.SubjectWithGradeLabels
-	for rows.Next() {
-		var subjectID int
-		var subjectName string
-		var gradeLabels pq.StringArray
-		if err := rows.Scan(&subjectID, &subjectName, &gradeLabels); err != nil {
-			log.Println("Failed to scan row:", err)
-			return nil, err
-		}
-
-		subjects = append(subjects, models.SubjectWithGradeLabels{
-			ID:          subjectID,
-			Name:        subjectName,
-			GradeLabels: gradeLabels,
-		})
-	}
-	if err := rows.Err(); err != nil {
-		log.Println("Error occurred while iterating through rows:", err)
-		return nil, err
-	}
-
-	//log.Println("Subjects with grade labels retrieved successfully:", subjects)
-	return subjects, nil
 }

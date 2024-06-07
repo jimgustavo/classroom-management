@@ -1,3 +1,4 @@
+// models/subject.go
 package models
 
 // Subject represents a subject entity
@@ -6,11 +7,10 @@ type Subject struct {
 	Name string `json:"name"`
 }
 
-// SubjectWithGradeLabels represents a subject along with its associated grade labels
 type SubjectWithGradeLabels struct {
-	ID          int      `json:"id"`
-	Name        string   `json:"name"`
-	GradeLabels []string `json:"grade_labels"`
+	ID          int              `json:"id"`
+	Name        string           `json:"name"`
+	GradeLabels []GradeLabelTerm `json:"grade_labels"`
 }
 
 type AddSubjectRequest struct {

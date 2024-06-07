@@ -3,53 +3,61 @@
 document.addEventListener("DOMContentLoaded", async () => {
     const urlParams = new URLSearchParams(window.location.search);
     const classroomID = urlParams.get('classroomID');
+    const term = urlParams.get('term');
+    const termID = urlParams.get('termID');
     const classroomName = urlParams.get('classroomName');
-    
-    document.getElementById("classroom-title").textContent = `Grades Grid of ${classroomName}`;
+
+    document.getElementById("classroom-title").textContent = `Grades Grid of ${classroomName} - ${term}`;
 
     try {
         const [studentsResponse, subjectsResponse, gradesResponse] = await Promise.all([
             fetch(`/classrooms/${classroomID}/students`),
             fetch(`/classrooms/${classroomID}/subjects`),
-            fetch(`/classrooms/${classroomID}/grades/get`)
+            fetch(`/classrooms/${classroomID}/grades/get?term=${encodeURIComponent(term)}`)
         ]);
 
         const students = await studentsResponse.json();
         const subjects = await subjectsResponse.json();
-        const gradesData = await gradesResponse.json();
+        //const gradesData = await gradesResponse.json();
+
+        //console.log("Fetched Students:", students);
+        //console.log("Fetched Subjects:", subjects);
+        //console.log("Fetched Grades Data:", gradesData);
 
         const gradesGridContainer = document.getElementById("grades-grid-container");
 
         subjects.forEach(subject => {
-            const subjectContainer = document.createElement('div');
-            subjectContainer.classList.add('subject-container');
-            
-            const subjectTitle = document.createElement('h2');
-            subjectTitle.textContent = subject.name;
-            subjectContainer.appendChild(subjectTitle);
+            const filteredGradeLabels = subject.grade_labels.filter(label => label.term_id == termID); // Filter by termID
+            console.log(`subjectID: ${subject.id}, filteredLabels:`, filteredGradeLabels);
+            if (filteredGradeLabels.length > 0) {
+                const subjectContainer = document.createElement('div');
+                subjectContainer.classList.add('subject-container');
 
-            const table = document.createElement('table');
-            table.id = `grades-grid-${subject.id}`;
-            table.classList.add('grades-grid');
-            subjectContainer.appendChild(table);
+                const subjectTitle = document.createElement('h2');
+                subjectTitle.textContent = subject.name;
+                subjectContainer.appendChild(subjectTitle);
 
-            const subjectGrades = gradesData.grades.filter(grade => grade.subjectID === subject.id);  // Add grades data for the current subject
-            generateGradesGrid(table, students, subject.grade_labels, subjectGrades);
-            
-            gradesGridContainer.appendChild(subjectContainer);
-            //generateGradesGrid(table, students, subject.grade_labels);
+                const table = document.createElement('table');
+                table.id = `grades-grid-${subject.id}`;
+                table.classList.add('grades-grid');
+                subjectContainer.appendChild(table);
+
+                generateGradesGrid(table, students, filteredGradeLabels);
+
+                gradesGridContainer.appendChild(subjectContainer);
+            }
         });
 
-         // Add event listener to the upload button
-         document.getElementById("upload-grades-btn").addEventListener("click", () => {
-            uploadGrades(classroomID, students, subjects);
+        document.getElementById("upload-grades-btn").addEventListener("click", () => {
+            uploadGrades(classroomID, students, subjects, term);
         });
+
     } catch (error) {
         console.error('Error fetching students or subjects:', error);
     }
 });
 
-function generateGradesGrid(gridElement, students, gradeLabels, gradesData) {
+function generateGradesGrid(gridElement, students, gradeLabels) {
     const headerRow = gridElement.insertRow();
 
     const numberHeaderCell = headerRow.insertCell();
@@ -60,7 +68,7 @@ function generateGradesGrid(gridElement, students, gradeLabels, gradesData) {
 
     gradeLabels.forEach(label => {
         const headerCell = headerRow.insertCell();
-        headerCell.textContent = label;
+        headerCell.textContent = label.label; // Display label name
     });
 
     students.forEach((student, index) => {
@@ -71,22 +79,16 @@ function generateGradesGrid(gridElement, students, gradeLabels, gradesData) {
 
         const nameCell = row.insertCell();
         nameCell.textContent = student.name;
+
         gradeLabels.forEach(label => {
             const gradeCell = row.insertCell();
             gradeCell.contentEditable = true;
-
-            const studentGrade = gradesData.find(grade => grade.studentID === student.id);
-            if (studentGrade) {
-                const gradeItem = studentGrade.grades.find(grade => grade.label === label);
-                if (gradeItem) {
-                    gradeCell.textContent = gradeItem.grade;
-                }
-            }
+            gradeCell.dataset.labelId = label.id; // Store label ID in data attribute
         });
     });
 }
 
-function uploadGrades(classroomID, students, subjects) {
+function uploadGrades(classroomID, students, subjects, term) {
     const gradesData = [];
 
     subjects.forEach(subject => {
@@ -95,15 +97,20 @@ function uploadGrades(classroomID, students, subjects) {
         for (let i = 1; i < gradesGrid.rows.length; i++) {
             const row = gradesGrid.rows[i];
             const studentGrades = {
-                studentID: students[i - 1].id,
-                subjectID: subject.id,
-                grades: []
+                student_id: students[i - 1].id,
+                subject_id: subject.id,
+                terms: [
+                    {
+                        term: term,
+                        grades: []
+                    }
+                ]
             };
 
             for (let j = 2; j < row.cells.length; j++) {
-                studentGrades.grades.push({
-                    label: subject.grade_labels[j - 2],
-                    grade: row.cells[j].textContent.trim()
+                studentGrades.terms[0].grades.push({
+                    label_id: parseInt(row.cells[j].dataset.labelId),
+                    grade: parseFloat(row.cells[j].textContent.trim()) || 0
                 });
             }
 
@@ -113,7 +120,7 @@ function uploadGrades(classroomID, students, subjects) {
 
     console.log("Grades Data to be uploaded:", JSON.stringify({ grades: gradesData }));
 
-    fetch(`/classrooms/${classroomID}/grades`, { // Updated URL with classroomID
+    fetch(`/classrooms/${classroomID}/grades`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
