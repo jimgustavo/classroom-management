@@ -108,6 +108,14 @@ function displayClassrooms(classrooms) {
             displayTermsModalToDisplayGrades(classroom.id, classroom.name, terms);
         });
 
+        // Create button to display averages
+        const averagesBtn = document.createElement("button");
+        averagesBtn.textContent = "Averages";
+        averagesBtn.classList.add("averages-btn");
+        averagesBtn.addEventListener("click", () => {
+            window.location.href = `display-averages.html?classroomID=${classroom.id}&classroomName=${classroom.name}`;
+        });
+
         card.appendChild(heading);
         card.appendChild(idPara);
         card.appendChild(deleteBtn);
@@ -115,6 +123,7 @@ function displayClassrooms(classrooms) {
         card.appendChild(showStudentsBtn);
         card.appendChild(addGradesBtn);
         card.appendChild(gradesBtn);
+        card.appendChild(averagesBtn);
         
         classroomList.appendChild(card);
     });
@@ -312,17 +321,6 @@ function displayTermsModalToUploadGrades(classroomId, classroomName, terms) {
     });
 }
 
-// Update fetchGradeLabelsForSubject function to accept the element to append
-async function fetchGradeLabelsForSubject(subjectID, subjectElement) {
-    try {
-        const response = await fetch(`/subjects/${subjectID}/grade-labels`);
-        const gradeLabels = await response.json();
-        displayGradeLabelsForSubject(subjectID, gradeLabels, subjectElement);
-    } catch (error) {
-        console.error(`Error fetching grade labels for subject ${subjectID}:`, error);
-    }
-}
-
 async function createClassroom(event) {
     event.preventDefault();
 
@@ -465,17 +463,6 @@ async function fetchSubjects() {
     }
 }
 
-async function fetchTermsForSubject(subjectID, subjects) {
-    try {
-        const response = await fetch(`/subjects/${subjectID}/terms`);
-        const terms = await response.json();
-        displaySubjectsForClassroom(subjectID, terms)
-        displayTermsForSubject(subjectID, subjects, terms);
-    } catch (error) {
-        console.error(`Error fetching terms for subject ${subjectID}:`, error);
-    }
-}
-
 // Update the displaySubjects function to include grade labels and delete buttons
 function displaySubjects(subjects) {
     const subjectList = document.getElementById("subject-list");
@@ -509,42 +496,13 @@ function displaySubjects(subjects) {
     });
 }
 
-// Function to display subjects for a classroom
-function displaySubjectsForClassroom(classroomID, subjects) {
-    let content = '<ul>';
-    subjects.forEach(subject => {
-        content += `<li>id: ${subject.id}, Subject: ${subject.name}
-                        <button class="show-grade-labels-btn" data-subject-id="${subject.id}">Show Grade Labels</button>
-                        <button class="remove-subject-btn" data-subject-id="${subject.id}">Remove Subject</button>
-                    </li>`;
-    });
-    content += '</ul>';
-    openModal(content);
-
-    // Add event listeners for grade labels and remove buttons
-    document.querySelectorAll('.show-grade-labels-btn').forEach(btn => {
-        btn.addEventListener('click', (event) => {
-            const subjectId = event.target.getAttribute('data-subject-id');
-            fetchGradeLabelsForSubject(subjectId);
-        });
-    });
-    
-    document.querySelectorAll('.remove-subject-btn').forEach(btn => {
-        btn.addEventListener('click', (event) => {
-            const subjectId = event.target.getAttribute('data-subject-id');
-            removeSubjectFromClassroom(classroomID, subjectId);
-        });
-    });
-}
-
-async function fetchGradeLabelsForTerm(subjectID, termID) {
+async function fetchTermsForSubject(subjectID, subjects) {
     try {
-        const response = await fetch(`/subjects/${subjectID}/terms/${termID}/grade-labels`);
-                                      
-        const gradeLabels = await response.json();
-        displayGradeLabelsForTerm(subjectID, termID, gradeLabels);
+        const response = await fetch(`/subjects/${subjectID}/terms`);
+        const terms = await response.json();
+        displayTermsForSubject(subjectID, subjects, terms);
     } catch (error) {
-        console.error(`Error fetching grade labels for subject ${subjectID} and term ${termID}:`, error);
+        console.error(`Error fetching terms for subject ${subjectID}:`, error);
     }
 }
 
@@ -577,10 +535,21 @@ function displayTermsForSubject(subjectID, subjects, terms) {
     });
 }
 
+async function fetchGradeLabelsForTerm(subjectID, termID) {
+    try {
+        const response = await fetch(`/subjects/${subjectID}/terms/${termID}/grade-labels`);
+                                      
+        const gradeLabels = await response.json();
+        displayGradeLabelsForTerm(subjectID, termID, gradeLabels);
+    } catch (error) {
+        console.error(`Error fetching grade labels for subject ${subjectID} and term ${termID}:`, error);
+    }
+}
+
 function displayGradeLabelsForTerm(subjectID, termID, gradeLabels) {
     let content = `<h4>Grade Labels for term id = ${termID}</h4><ul>`;
     gradeLabels.forEach(gradeLabel => {
-        content += `<li>${gradeLabel.id} --> ${gradeLabel.label}
+        content += `<li>(${gradeLabel.id}) ${gradeLabel.label}
                         <button class="delete-btn" data-grade-label-id="${gradeLabel.id}">Delete Grade Label</button>
                     </li>`;
     });

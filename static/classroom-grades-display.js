@@ -65,6 +65,10 @@ function generateGradesGrid(gridElement, students, gradeLabels, gradesData, subj
         headerCell.textContent = label.label; // Display label name
     });
 
+    // Add term-average header
+    const averageHeaderCell = headerRow.insertCell();
+    averageHeaderCell.textContent = `${term}-average`;
+    
     students.forEach((student, index) => {
         const row = gridElement.insertRow();
 
@@ -73,6 +77,9 @@ function generateGradesGrid(gridElement, students, gradeLabels, gradesData, subj
 
         const nameCell = row.insertCell();
         nameCell.textContent = student.name;
+
+        let totalGrades = 0;
+        let gradeCount = 0;
 
         gradeLabels.forEach(label => {
             const gradeCell = row.insertCell();
@@ -87,101 +94,16 @@ function generateGradesGrid(gridElement, students, gradeLabels, gradesData, subj
                     const gradeEntry = termGrades.grades.find(g => g.label_id === label.id);
                     if (gradeEntry) {
                         gradeCell.textContent = gradeEntry.grade;
+                        totalGrades += parseFloat(gradeEntry.grade);
+                        gradeCount++;
                     }
                 }
             }
         });
+
+            // Calculate and add term average
+            const averageCell = row.insertCell();
+            const average = gradeCount > 0 ? (totalGrades / gradeCount).toFixed(2) : '0.00';
+            averageCell.textContent = average;
     });
 }
-
-
-/*
-function generateGradesGrid(gridElement, students, gradeLabels) {
-    const headerRow = gridElement.insertRow();
-
-    const numberHeaderCell = headerRow.insertCell();
-    numberHeaderCell.textContent = 'Number';
-
-    const nameHeaderCell = headerRow.insertCell();
-    nameHeaderCell.textContent = 'Student Name';
-
-    gradeLabels.forEach(label => {
-        const headerCell = headerRow.insertCell();
-        headerCell.textContent = label.label; // Display label name
-    });
-
-    // Log the grade labels
-    console.log('Grade Labels:', gradeLabels);
-
-    students.forEach((student, index) => {
-        const row = gridElement.insertRow();
-
-        const numberCell = row.insertCell();
-        numberCell.textContent = index + 1;
-
-        const nameCell = row.insertCell();
-        nameCell.textContent = student.name;
-
-        gradeLabels.forEach(label => {
-            const gradeCell = row.insertCell();
-            gradeCell.contentEditable = false; // Make cell editable
-
-            // Find the student's grade for the current label
-            const studentGrade = subjectGrades.find(grade => grade.student_id === student.id);
-            
-            // Log the student grade
-            console.log(`Student ID: ${student.id}, Student Grade:`, studentGrade);
-
-            if (studentGrade) {
-                const gradeItem = studentGrade.grades.find(g => g.label_id === label.id);
-
-                // Log the grade item
-                console.log(`Label ID: ${label.id}, Grade Item:`, gradeItem);
-
-                if (gradeItem) {
-                    gradeCell.textContent = gradeItem.grade;
-                }
-            }
-        });
-    });
-}
-
-*/
-
- /*
-        // Check if gradesData is empty
-        if (!gradesData || gradesData.length === 0) {
-            console.log("No grades data found.");
-            gradesData = { grades: [] }; // Set gradesData to an empty object
-        }
-           
-        // Log label_id and grade
-        gradesData.grades.forEach(student => {
-            student.terms.forEach(term => {
-                 console.log(`Term: ${term.term}`);
-                 term.grades.forEach(grade => {
-                     console.log(`  label_id: ${grade.label_id}, grade: ${grade.grade}`);
-                });
-            });
-        });
-        */
-
-
-         /*
-        const subjectGrades = gradesData.grades
-                .filter(grade => grade.subject_id === subject.id)
-                .flatMap(grade => grade.terms)
-                .filter(t => t.term === term); // Filter grades by term
-         */
-
-/*
-            // Get the grades for the current student
-            const studentTermGrades = gradesData.find(grade => grade.student_id === student.id);
-
-            if (studentTermGrades) {
-                const gradeItem = studentTermGrades.grades.find(grade => grade.label_id === label.id); // Adjusted to use label_id
-                if (gradeItem) {
-                    gradeCell.textContent = gradeItem.grade;
-                }
-            }
-             */

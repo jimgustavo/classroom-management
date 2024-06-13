@@ -137,9 +137,20 @@ function uploadGrades(classroomID, students, subjects, term) {
     .then(data => {
         console.log("Data received from server:", data);
         alert('Grades uploaded successfully');
+        console.log("uploaded grades:", body);
     })
     .catch(error => {
         console.error('Error uploading grades:', error);
         alert('Failed to upload grades');
     });
 }
+
+
+ /*
+            for (let j = 2; j < row.cells.length - 1; j++) { // Exclude the last cell (term-average)
+                studentGrades.terms[0].grades.push({
+                    label_id: parseInt(row.cells[j].dataset.labelId),
+                    grade: parseFloat(row.cells[j].textContent.trim()) || 0
+                });
+            }
+*/

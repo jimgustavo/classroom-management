@@ -37,6 +37,7 @@ func main() {
 	router.HandleFunc("/classrooms/{classroom_id}/students", handlers.GetStudentsByClassroom).Methods("GET")
 	router.HandleFunc("/classrooms/{classroomID}/grades/get", handlers.GetGradesByClassroomID).Methods("GET")
 	router.HandleFunc("/classrooms/{classroomID}/terms/{termID}/grades", handlers.GetGradesByClassroomIDAndTermID).Methods("GET")
+	router.HandleFunc("/classrooms/{classroomID}/averages", handlers.GetAverageGradesByClassroomID).Methods("GET")
 	router.HandleFunc("/classrooms", handlers.CreateClassroom).Methods("POST")
 	router.HandleFunc("/classrooms/{classroomID}/subject/{subjectID}", handlers.AddSubjectToClassroom).Methods("POST")
 	router.HandleFunc("/classrooms/{classroomID}/grades", handlers.UploadGradesToClassroom).Methods("POST")
