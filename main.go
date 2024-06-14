@@ -8,6 +8,7 @@ import (
 
 	"github.com/jimgustavo/classroom-management/database"
 	"github.com/jimgustavo/classroom-management/handlers"
+	"github.com/jimgustavo/classroom-management/middleware"
 )
 
 func enableCors(next http.Handler) http.Handler {
@@ -25,62 +26,73 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	//defer db.Close()
+	//defer db.Close()  // Ensure the database connection is closed when the program exits
 
 	// Initialize router
 	router := mux.NewRouter()
 
+	// Public routes
+	router.HandleFunc("/login", handlers.Login).Methods("POST")
+	router.HandleFunc("/signup", handlers.SignUp).Methods("POST")
+	router.HandleFunc("/logout", handlers.Logout)
+	router.HandleFunc("/teachers", handlers.GetAllTeachersHandler).Methods("GET")
+	router.HandleFunc("/teachers/{id}", handlers.DeleteTeacherHandler).Methods("DELETE")
+
+	// Protected routes
+	apiRouter := router.PathPrefix("/api").Subrouter()
+	apiRouter.Use(middleware.Authenticate)
+
 	// Classroom routes
-	router.HandleFunc("/classrooms", handlers.GetAllClassrooms).Methods("GET")
-	router.HandleFunc("/classrooms/{id}", handlers.GetClassroom).Methods("GET")
-	router.HandleFunc("/classrooms/{classroomID}/subjects", handlers.GetSubjectsInClassroom).Methods("GET")
-	router.HandleFunc("/classrooms/{classroom_id}/students", handlers.GetStudentsByClassroom).Methods("GET")
-	router.HandleFunc("/classrooms/{classroomID}/grades/get", handlers.GetGradesByClassroomID).Methods("GET")
-	router.HandleFunc("/classrooms/{classroomID}/terms/{termID}/grades", handlers.GetGradesByClassroomIDAndTermID).Methods("GET")
-	router.HandleFunc("/classrooms/{classroomID}/averages", handlers.GetAverageGradesByClassroomID).Methods("GET")
-	router.HandleFunc("/classrooms", handlers.CreateClassroom).Methods("POST")
-	router.HandleFunc("/classrooms/{classroomID}/subject/{subjectID}", handlers.AddSubjectToClassroom).Methods("POST")
-	router.HandleFunc("/classrooms/{classroomID}/grades", handlers.UploadGradesToClassroom).Methods("POST")
-	router.HandleFunc("/classrooms/{classroomID}/upload-students", handlers.UploadStudentsFromExcel).Methods("POST") // for uploading students from an Excel file
-	router.HandleFunc("/classrooms/{id}", handlers.UpdateClassroom).Methods("PUT")
-	router.HandleFunc("/classrooms/{id}", handlers.DeleteClassroom).Methods("DELETE")
-	router.HandleFunc("/classrooms/{classroomID}/students/{studentID}", handlers.UnrollStudentFromClassroom).Methods("DELETE")
-	router.HandleFunc("/classrooms/{classroomID}/subjects/{subjectID}", handlers.RemoveSubjectFromClassroom).Methods("DELETE")
+	apiRouter.HandleFunc("/classrooms", handlers.GetAllClassrooms).Methods("GET")
+	apiRouter.HandleFunc("/classrooms/{id}", handlers.GetClassroom).Methods("GET")
+	apiRouter.HandleFunc("/classrooms/{classroomID}/subjects", handlers.GetSubjectsInClassroom).Methods("GET")
+	apiRouter.HandleFunc("/classrooms/{classroom_id}/students", handlers.GetStudentsByClassroom).Methods("GET")
+	apiRouter.HandleFunc("/classrooms/{classroomID}/grades/get", handlers.GetGradesByClassroomID).Methods("GET")
+	apiRouter.HandleFunc("/classrooms/{classroomID}/terms/{termID}/grades", handlers.GetGradesByClassroomIDAndTermID).Methods("GET")
+	apiRouter.HandleFunc("/classrooms/{classroomID}/averages", handlers.GetAverageGradesByClassroomID).Methods("GET")
+	apiRouter.HandleFunc("/classrooms", handlers.CreateClassroom).Methods("POST")
+	apiRouter.HandleFunc("/classrooms/{classroomID}/subject/{subjectID}", handlers.AddSubjectToClassroom).Methods("POST")
+	apiRouter.HandleFunc("/classrooms/{classroomID}/grades", handlers.UploadGradesToClassroom).Methods("POST")
+	apiRouter.HandleFunc("/classrooms/{classroomID}/upload-students", handlers.UploadStudentsFromExcel).Methods("POST") // for uploading students from an Excel file
+	apiRouter.HandleFunc("/classrooms/{id}", handlers.UpdateClassroom).Methods("PUT")
+	apiRouter.HandleFunc("/classrooms/{id}", handlers.DeleteClassroom).Methods("DELETE")
+	apiRouter.HandleFunc("/classrooms/{classroomID}/students/{studentID}", handlers.UnrollStudentFromClassroom).Methods("DELETE")
+	apiRouter.HandleFunc("/classrooms/{classroomID}/subjects/{subjectID}", handlers.RemoveSubjectFromClassroom).Methods("DELETE")
 
 	// Student routes
-	router.HandleFunc("/students", handlers.GetAllStudents).Methods("GET")
-	router.HandleFunc("/students/with-classroom-and-subjects", handlers.GetAllStudentsWithClassroomAndSubjects).Methods("GET")
-	router.HandleFunc("/students/{id}", handlers.GetStudent).Methods("GET")
-	router.HandleFunc("/students/{studentID}/subjects", handlers.GetSubjectsByStudentID).Methods("GET")
-	router.HandleFunc("/students", handlers.CreateStudent).Methods("POST")
-	router.HandleFunc("/students/{id}", handlers.UpdateStudent).Methods("PUT")
-	router.HandleFunc("/students/{id}", handlers.DeleteStudent).Methods("DELETE")
+	apiRouter.HandleFunc("/students", handlers.GetAllStudents).Methods("GET")
+	apiRouter.HandleFunc("/students/with-classroom-and-subjects", handlers.GetAllStudentsWithClassroomAndSubjects).Methods("GET")
+	apiRouter.HandleFunc("/students/{id}", handlers.GetStudent).Methods("GET")
+	apiRouter.HandleFunc("/students/{studentID}/subjects", handlers.GetSubjectsByStudentID).Methods("GET")
+	apiRouter.HandleFunc("/students", handlers.CreateStudent).Methods("POST")
+	apiRouter.HandleFunc("/students/{id}", handlers.UpdateStudent).Methods("PUT")
+	apiRouter.HandleFunc("/students/{id}", handlers.DeleteStudent).Methods("DELETE")
 
 	// Subject routes
-	router.HandleFunc("/subjects", handlers.GetAllSubjects).Methods("GET")
-	router.HandleFunc("/subjects/{id}", handlers.GetSubject).Methods("GET")
-	router.HandleFunc("/subjects/{subjectID}/students", handlers.GetStudentsBySubjectID).Methods("GET")
-	router.HandleFunc("/subjects/{subjectID}/terms", handlers.GetTermsBySubjectID).Methods("GET")
-	router.HandleFunc("/subjects/{subjectID}/terms/{termID}/grade-labels", handlers.GetGradeLabelsForSubject).Methods("GET")
-	router.HandleFunc("/subjects", handlers.CreateSubject).Methods("POST")
-	router.HandleFunc("/subjects/{subjectID}/grade-labels/{gradeLabelID}/terms/{termID}", handlers.AssignGradeLabelToSubjectByTerm).Methods("POST")
-	router.HandleFunc("/subjects/{id}", handlers.UpdateSubject).Methods("PUT")
-	router.HandleFunc("/subjects/{id}", handlers.DeleteSubject).Methods("DELETE")
-	router.HandleFunc("/subjects/{subjectID}/grade-labels/{gradeLabelID}/terms/{termID}", handlers.RemoveGradeLabelFromSubjectByTerm).Methods("DELETE")
+	apiRouter.HandleFunc("/subjects", handlers.GetAllSubjects).Methods("GET")
+	apiRouter.HandleFunc("/subjects/{id}", handlers.GetSubject).Methods("GET")
+	apiRouter.HandleFunc("/subjects/{subjectID}/students", handlers.GetStudentsBySubjectID).Methods("GET")
+	apiRouter.HandleFunc("/subjects/{subjectID}/terms", handlers.GetTermsBySubjectID).Methods("GET")
+	apiRouter.HandleFunc("/subjects/{subjectID}/terms/{termID}/grade-labels", handlers.GetGradeLabelsForSubject).Methods("GET")
+	apiRouter.HandleFunc("/subjects", handlers.CreateSubject).Methods("POST")
+	apiRouter.HandleFunc("/subjects/{subjectID}/grade-labels/{gradeLabelID}/terms/{termID}", handlers.AssignGradeLabelToSubjectByTerm).Methods("POST")
+	apiRouter.HandleFunc("/subjects/{id}", handlers.UpdateSubject).Methods("PUT")
+	apiRouter.HandleFunc("/subjects/{id}", handlers.DeleteSubject).Methods("DELETE")
+	apiRouter.HandleFunc("/subjects/{subjectID}/grade-labels/{gradeLabelID}/terms/{termID}", handlers.RemoveGradeLabelFromSubjectByTerm).Methods("DELETE")
 
 	// Grade Labels routes
-	router.HandleFunc("/grade-labels", handlers.CreateGradeLabel).Methods("POST")
-	router.HandleFunc("/grade-labels", handlers.GetAllGradeLabels).Methods("GET")
-	router.HandleFunc("/grade-labels/{id}", handlers.GetGradeLabel).Methods("GET")
-	router.HandleFunc("/grade-labels/{id}", handlers.UpdateGradeLabel).Methods("PUT")
-	router.HandleFunc("/grade-labels/{id}", handlers.DeleteGradeLabel).Methods("DELETE")
+	apiRouter.HandleFunc("/grade-labels", handlers.CreateGradeLabel).Methods("POST")
+	apiRouter.HandleFunc("/grade-labels", handlers.GetAllGradeLabels).Methods("GET")
+	apiRouter.HandleFunc("/grade-labels/{id}", handlers.GetGradeLabel).Methods("GET")
+	apiRouter.HandleFunc("/grade-labels/{id}", handlers.UpdateGradeLabel).Methods("PUT")
+	apiRouter.HandleFunc("/grade-labels/{id}", handlers.DeleteGradeLabel).Methods("DELETE")
 
 	// Term routes
-	router.HandleFunc("/terms", handlers.GetAllTerms).Methods("GET")
-	router.HandleFunc("/terms/{id}", handlers.GetTerm).Methods("GET")
-	router.HandleFunc("/terms", handlers.CreateTerm).Methods("POST")
-	router.HandleFunc("/terms/{id}", handlers.UpdateTerm).Methods("PUT")
-	router.HandleFunc("/terms/{id}", handlers.DeleteTerm).Methods("DELETE")
+	apiRouter.HandleFunc("/terms", handlers.GetAllTerms).Methods("GET")
+	apiRouter.HandleFunc("/terms/{id}", handlers.GetTerm).Methods("GET")
+	apiRouter.HandleFunc("/terms", handlers.CreateTerm).Methods("POST")
+	apiRouter.HandleFunc("/terms/{id}", handlers.UpdateTerm).Methods("PUT")
+	apiRouter.HandleFunc("/terms/{id}", handlers.DeleteTerm).Methods("DELETE")
 
 	// Serve static files from the "static" directory
 	router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
@@ -102,34 +114,44 @@ classroom-management/
 │   ├── classroom_handlers.go
 │   ├── grade_handlers.go
 │   ├── grade_label_handlers.go
-│ 	├── student_handlers.go
-│ 	├── subject_handlers.go
-│	  └── term_handlers.go
+│   ├── student_handlers.go
+│   ├── subject_handlers.go
+│   ├── teacher_handlers.go
+│   └── term_handlers.go
 │
 ├── models/
 │   ├── classroom.go
 │   ├── grade_label.go
 │   ├── grade.go
-│	  ├── student.go
-│	  ├── subject.go
-│ 	└── term.go
+│   ├── student.go
+│   ├── subject.go
+│   ├── teacher.go
+│   └── term.go
 │
-└── database/
+├── database/
 │   ├── database.go
 │   ├── classroom.go
 │   ├── grade_label.go
 │   ├── grade.go
-│	  ├── student.go
-│	  ├── subject.go
-│  	└── term.go
+│   ├── student.go
+│   ├── subject.go
+│   ├── teacher.go
+│   └── term.go
 │
-│── classroom_management.sql
-│── go.mod
-│── go.sum
+├── middleware/
+│   └── auth.go
+│
+├── classroom_management.sql
+├── go.mod
+├── go.sum
 └── static/
     ├── index.html
     ├── script.js
     ├── styles.css
+	├── main.html
+    ├── main.js
+    ├── main.css
+	├── signup.html
     ├── classroom-grades-display.html
     ├── classroom-grades-display.js
     ├── classroom-grades-display.css
@@ -160,29 +182,71 @@ SELECT * FROM terms;
 
 To delete tables:
 
-DROP TABLE grades;
+DROP TABLE grade_labels;
 
 To create table:
 
-CREATE TABLE grades (
-    student_id INT,
-    subject_id INT,
-    term VARCHAR(50),
-    label VARCHAR(50),
-    grade FLOAT,
-    classroom_id INT,
-    PRIMARY KEY (student_id, subject_id, term, label),
-    CONSTRAINT fk_student FOREIGN KEY (student_id) REFERENCES students(id),
-    CONSTRAINT fk_subject FOREIGN KEY (subject_id) REFERENCES subjects(id),
-    CONSTRAINT fk_classroom FOREIGN KEY (classroom_id) REFERENCES classrooms(id)
+-- Table to store grade labels for each classroom and subject
+CREATE TABLE grade_labels (
+    id SERIAL PRIMARY KEY,
+    label VARCHAR(255), -- Label for the grade (e.g., "1st input", "2nd input", "lesson", "quiz", etc.)
+    date DATE,          -- New field for date
+    skill VARCHAR(255), -- New field for skill
+    teacher_id INT REFERENCES teachers(id)
 );
 
 ////////////////CURL COMMANDS///////////////////
+Sign Up:
+
+curl -X POST http://localhost:8080/signup \
+    -H "Content-Type: application/json" \
+    -d '{
+        "name": "Gustavo",
+        "email": "jimgustavo1987@gmail.com",
+        "password": "hola"
+    }'
+
+curl -X POST http://localhost:8080/login \
+    -H "Content-Type: application/json" \
+    -d '{
+        "email": "jimgustavo1987@gmail.com",
+        "password": "hola"
+    }'
+
+	returned token: {"token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZWFjaGVyX2lkIjoxLCJleHAiOjE3MTgzODE5NjN9.J7v5VPJgaRgaVCgZqOL4KG9aUHe8RvGqG5JLM7dHSCc"}
+
+
+
 Create a Classroom:
-curl -X POST -H "Content-Type: application/json" -d '{"name":"Room A"}' http://localhost:8080/classrooms
+curl -X POST http://localhost:8080/api/classrooms \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZWFjaGVyX2lkIjoxLCJleHAiOjE3MTgzODE5NjN9.J7v5VPJgaRgaVCgZqOL4KG9aUHe8RvGqG5JLM7dHSCc" \
+    -d '{
+        "name": "Room A",
+        "teacher_id": 1
+    }'
+
+Get all Classrooms:
+
+curl -X GET http://localhost:8080/api/classrooms \
+    -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZWFjaGVyX2lkIjoxLCJleHAiOjE3MTgzODE5NjN9.J7v5VPJgaRgaVCgZqOL4KG9aUHe8RvGqG5JLM7dHSCc"
+
 
 Create a Student:
-curl -X POST -H "Content-Type: application/json" -d '{"name":"Jimmy Ruiz", "classroom_id":1}' http://localhost:8080/students
+
+curl -X POST http://localhost:8080/api/students \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZWFjaGVyX2lkIjoxLCJleHAiOjE3MTg0MDUyOTZ9.l0dx49smDnHw9hIVHJpBfygumPUp9hJLKI2fRDjNagU" \
+    -d '{
+        "name": "Isabelita",
+        "classroom_id": 1,
+        "teacher_id": 1
+    }'
+Get all students:
+
+curl -X GET http://localhost:8080/api/students \
+    -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZWFjaGVyX2lkIjoxLCJleHAiOjE3MTg0MDUyOTZ9.l0dx49smDnHw9hIVHJpBfygumPUp9hJLKI2fRDjNagU"
+
 
 Update a Student:
 curl -X PUT -H "Content-Type: application/json" -d '{
@@ -203,7 +267,7 @@ curl -X POST "http://localhost:8080/classrooms/4/upload-students?startCell=B7&en
      -F "file=@./consolidado.xlsx"
 
 
-curl -X DELETE http://localhost:8080/subjects/1/grade-labels/5/terms/1
+curl -X DELETE http://localhost:8080/teachers/1
 
 curl -X POST http://localhost:8080/classrooms/1/subject/2
 */

@@ -41,7 +41,7 @@ func GetTerm(id int) (*models.Term, error) {
 
 // CreateTerm inserts a new term into the database
 func CreateTerm(term *models.Term) error {
-	err := db.QueryRow("INSERT INTO terms (name) VALUES ($1) RETURNING id", term.Name).Scan(&term.ID)
+	err := db.QueryRow("INSERT INTO terms (name, teacher_id) VALUES ($1, $2) RETURNING id", term.Name, term.TeacherID).Scan(&term.ID)
 	return err
 }
 

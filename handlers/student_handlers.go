@@ -61,31 +61,6 @@ func GetStudent(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(student)
 }
 
-// GetAllStudentsWithClassroomAndSubjects retrieves all students along with their assigned classroom and subjects
-func GetAllStudentsWithClassroomAndSubjects(w http.ResponseWriter, r *http.Request) {
-	// Get all students with their assigned classroom and subjects from the database
-	students, err := database.GetAllStudentsWithClassroomAndSubjects()
-	if err != nil {
-		//log.Printf("Error retrieving students with classroom and subjects: %v\n", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	log.Println("Students retrieved successfully")
-
-	// Set Content-Type header to application/json
-	w.Header().Set("Content-Type", "application/json")
-
-	// Encode students into JSON and write response
-	if err := json.NewEncoder(w).Encode(students); err != nil {
-		log.Printf("Error encoding students into JSON: %v\n", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	log.Println("Response sent successfully")
-}
-
 // UpdateStudent updates the details of a specific student
 func UpdateStudent(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
@@ -128,6 +103,30 @@ func DeleteStudent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// GetAllStudentsWithClassroomAndSubjects retrieves all students along with their assigned classroom and subjects
+func GetAllStudentsWithClassroomAndSubjects(w http.ResponseWriter, r *http.Request) {
+	// Get all students with their assigned classroom and subjects from the database
+	students, err := database.GetAllStudentsWithClassroomAndSubjects()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	log.Println("Students retrieved successfully")
+
+	// Set Content-Type header to application/json
+	w.Header().Set("Content-Type", "application/json")
+
+	// Encode students into JSON and write response
+	if err := json.NewEncoder(w).Encode(students); err != nil {
+		log.Printf("Error encoding students into JSON: %v\n", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	log.Println("Response sent successfully")
 }
 
 // GetStudentsBySubjectIDHandler retrieves all students associated with a subject by subject ID

@@ -14,8 +14,8 @@ func CreateSubject(subject *models.Subject) error {
 		return errors.New("database connection is not initialized")
 	}
 
-	query := "INSERT INTO subjects (name) VALUES ($1) RETURNING id"
-	err := db.QueryRow(query, subject.Name).Scan(&subject.ID)
+	query := "INSERT INTO subjects (name, teacher_id) VALUES ($1, $2) RETURNING id"
+	err := db.QueryRow(query, subject.Name, subject.TeacherID).Scan(&subject.ID)
 	if err != nil {
 		return err
 	}
@@ -29,7 +29,7 @@ func GetAllSubjects() ([]models.Subject, error) {
 		return nil, errors.New("database connection is not initialized")
 	}
 
-	query := "SELECT id, name FROM subjects"
+	query := "SELECT id, name, teacher_id FROM subjects"
 	rows, err := db.Query(query)
 	if err != nil {
 		return nil, err
@@ -39,7 +39,7 @@ func GetAllSubjects() ([]models.Subject, error) {
 	var subjects []models.Subject
 	for rows.Next() {
 		var subject models.Subject
-		err := rows.Scan(&subject.ID, &subject.Name)
+		err := rows.Scan(&subject.ID, &subject.Name, &subject.TeacherID)
 		if err != nil {
 			return nil, err
 		}
@@ -59,8 +59,8 @@ func GetSubjectByID(id int) (*models.Subject, error) {
 	}
 
 	var subject models.Subject
-	query := "SELECT name FROM subjects WHERE id = $1"
-	err := db.QueryRow(query, id).Scan(&subject.Name)
+	query := "SELECT name, teacher_id FROM subjects WHERE id = $1"
+	err := db.QueryRow(query, id).Scan(&subject.Name, &subject.TeacherID)
 	if err != nil {
 		return nil, err
 	}
@@ -75,8 +75,8 @@ func UpdateSubject(id int, updatedSubject *models.Subject) error {
 		return errors.New("database connection is not initialized")
 	}
 
-	query := "UPDATE subjects SET name = $1 WHERE id = $2"
-	_, err := db.Exec(query, updatedSubject.Name, id)
+	query := "UPDATE subjects SET name = $1, teacher_id = $2 WHERE id = $3"
+	_, err := db.Exec(query, updatedSubject.Name, updatedSubject.TeacherID, id)
 	if err != nil {
 		return err
 	}

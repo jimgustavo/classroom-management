@@ -215,3 +215,15 @@ func RemoveSubjectFromClassroom(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusNoContent)
 }
+
+/*
+func GetAllClassrooms(w http.ResponseWriter, r *http.Request) {
+    teacherID := r.Context().Value("teacherID").(int) // Assuming you have middleware that sets this
+    classrooms, err := database.GetClassroomsByTeacherID(teacherID)
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
+    json.NewEncoder(w).Encode(classrooms)
+}
+*/

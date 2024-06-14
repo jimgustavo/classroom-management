@@ -16,8 +16,8 @@ func CreateGradeLabel(gradeLabel *models.GradeLabel) error {
 		return errors.New("database connection is not initialized")
 	}
 
-	query := "INSERT INTO grade_labels (label) VALUES ($1) RETURNING id"
-	err := db.QueryRow(query, gradeLabel.Label).Scan(&gradeLabel.ID)
+	query := "INSERT INTO grade_labels (label, date, skill, teacher_id) VALUES ($1, $2, $3, $4) RETURNING id"
+	err := db.QueryRow(query, gradeLabel.Label, gradeLabel.Date, gradeLabel.Skill, gradeLabel.TeacherID).Scan(&gradeLabel.ID)
 	if err != nil {
 		return err
 	}
@@ -26,7 +26,7 @@ func CreateGradeLabel(gradeLabel *models.GradeLabel) error {
 
 // GetAllGradeLabels retrieves all grade labels from the database
 func GetAllGradeLabels() ([]models.GradeLabel, error) {
-	query := "SELECT id, label FROM grade_labels"
+	query := "SELECT id, label, date, skill FROM grade_labels"
 	rows, err := db.Query(query)
 	if err != nil {
 		return nil, err
@@ -36,7 +36,7 @@ func GetAllGradeLabels() ([]models.GradeLabel, error) {
 	var gradeLabels []models.GradeLabel
 	for rows.Next() {
 		var gradeLabel models.GradeLabel
-		if err := rows.Scan(&gradeLabel.ID, &gradeLabel.Label); err != nil {
+		if err := rows.Scan(&gradeLabel.ID, &gradeLabel.Label, &gradeLabel.Date, &gradeLabel.Skill); err != nil {
 			return nil, err
 		}
 		gradeLabels = append(gradeLabels, gradeLabel)
@@ -48,8 +48,8 @@ func GetAllGradeLabels() ([]models.GradeLabel, error) {
 // GetGradeLabelByID retrieves a specific grade label by its ID from the database
 func GetGradeLabelByID(id string) (*models.GradeLabel, error) {
 	var gradeLabel models.GradeLabel
-	query := "SELECT id, label FROM grade_labels WHERE id = $1"
-	err := db.QueryRow(query, id).Scan(&gradeLabel.ID, &gradeLabel.Label)
+	query := "SELECT id, label, date, skill FROM grade_labels WHERE id = $1"
+	err := db.QueryRow(query, id).Scan(&gradeLabel.ID, &gradeLabel.Label, &gradeLabel.Date, &gradeLabel.Skill)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, errors.New("grade label not found")
@@ -61,8 +61,8 @@ func GetGradeLabelByID(id string) (*models.GradeLabel, error) {
 
 // UpdateGradeLabel updates an existing grade label in the database
 func UpdateGradeLabel(gradeLabel *models.GradeLabel) error {
-	query := "UPDATE grade_labels SET label = $2 WHERE id = $3"
-	_, err := db.Exec(query, gradeLabel.Label, gradeLabel.ID)
+	query := "UPDATE grade_labels SET label = $1, date = $2, skill = $3 WHERE id = $4"
+	_, err := db.Exec(query, gradeLabel.Label, gradeLabel.Date, gradeLabel.Skill, gradeLabel.ID)
 	if err != nil {
 		return err
 	}

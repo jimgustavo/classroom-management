@@ -17,8 +17,8 @@ func CreateClassroom(classroom *models.Classroom) error {
 		return errors.New("database connection is not initialized")
 	}
 
-	query := "INSERT INTO classrooms (name) VALUES ($1) RETURNING id"
-	err := db.QueryRow(query, classroom.Name).Scan(&classroom.ID)
+	query := "INSERT INTO classrooms (name, teacher_id) VALUES ($1, $2) RETURNING id"
+	err := db.QueryRow(query, classroom.Name, classroom.TeacherID).Scan(&classroom.ID)
 	if err != nil {
 		return err
 	}
@@ -32,7 +32,11 @@ func GetAllClassrooms() ([]models.Classroom, error) {
 		return nil, errors.New("database connection is not initialized")
 	}
 
-	query := "SELECT id, name FROM classrooms"
+	query := `
+        SELECT classrooms.id, classrooms.name, teachers.id, teachers.name
+        FROM classrooms
+        JOIN teachers ON classrooms.teacher_id = teachers.id
+    `
 	rows, err := db.Query(query)
 	if err != nil {
 		return nil, err
@@ -42,10 +46,12 @@ func GetAllClassrooms() ([]models.Classroom, error) {
 	var classrooms []models.Classroom
 	for rows.Next() {
 		var classroom models.Classroom
-		err := rows.Scan(&classroom.ID, &classroom.Name)
+		var teacher models.Teacher
+		err := rows.Scan(&classroom.ID, &classroom.Name, &teacher.ID, &teacher.Name)
 		if err != nil {
 			return nil, err
 		}
+		classroom.Teacher = teacher
 		classrooms = append(classrooms, classroom)
 	}
 	if err := rows.Err(); err != nil {
@@ -62,14 +68,36 @@ func GetClassroomByID(id int) (*models.Classroom, error) {
 	}
 
 	var classroom models.Classroom
-	query := "SELECT name FROM classrooms WHERE id = $1"
-	err := db.QueryRow(query, id).Scan(&classroom.Name)
+	var teacher models.Teacher
+	query := `
+        SELECT classrooms.name, teachers.id, teachers.name
+        FROM classrooms
+        JOIN teachers ON classrooms.teacher_id = teachers.id
+        WHERE classrooms.id = $1
+    `
+	err := db.QueryRow(query, id).Scan(&classroom.Name, &teacher.ID, &teacher.Name)
 	if err != nil {
 		return nil, err
 	}
 	classroom.ID = id
+	classroom.Teacher = teacher
 
 	return &classroom, nil
+}
+
+// UpdateClassroom updates the details of a specific classroom in the database
+func UpdateClassroom(id int, updatedClassroom *models.Classroom) error {
+	if db == nil {
+		return errors.New("database connection is not initialized")
+	}
+
+	query := "UPDATE classrooms SET name = $1, teacher_id = $2 WHERE id = $3"
+	_, err := db.Exec(query, updatedClassroom.Name, updatedClassroom.TeacherID, id)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // GetStudentsByClassroomID retrieves all students belonging to a specific classroom by classroom ID
@@ -100,21 +128,6 @@ func GetStudentsByClassroomID(classroomID int) ([]models.Student, error) {
 	}
 
 	return students, nil
-}
-
-// UpdateClassroom updates the details of a specific classroom in the database
-func UpdateClassroom(id int, updatedClassroom *models.Classroom) error {
-	if db == nil {
-		return errors.New("database connection is not initialized")
-	}
-
-	query := "UPDATE classrooms SET name = $1 WHERE id = $2"
-	_, err := db.Exec(query, updatedClassroom.Name, id)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 // AddSubjectToClassroom adds a subject to a classroom

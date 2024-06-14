@@ -9,9 +9,27 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     try {
         const [studentsResponse, subjectsResponse, averagesResponse] = await Promise.all([
-            fetch(`/classrooms/${classroomID}/students`),
-            fetch(`/classrooms/${classroomID}/subjects`),
-            fetch(`/classrooms/${classroomID}/averages`)
+            fetch(`/api/classrooms/${classroomID}/students`, {
+                method: 'GET', // Add the GET method
+                headers: {
+                    "Content-Type": "application/json",
+                    'Authorization': `Bearer ${localStorage.getItem("token")}` // Add your authorization token here
+                }
+            }),
+            fetch(`/api/classrooms/${classroomID}/subjects`, {
+                method: 'GET', // Add the GET method
+                headers: {
+                    "Content-Type": "application/json",
+                    'Authorization': `Bearer ${localStorage.getItem("token")}` // Add your authorization token here
+                }
+            }),
+            fetch(`/api/classrooms/${classroomID}/averages`, {
+                method: 'GET', // Add the GET method
+                headers: {
+                    "Content-Type": "application/json",
+                    'Authorization': `Bearer ${localStorage.getItem("token")}` // Add your authorization token here
+                }
+            }),
         ]);
 
         const students = await studentsResponse.json();

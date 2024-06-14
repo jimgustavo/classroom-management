@@ -11,11 +11,28 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     try {
         const [studentsResponse, subjectsResponse, gradesResponse] = await Promise.all([
-            fetch(`/classrooms/${classroomID}/students`),
-            fetch(`/classrooms/${classroomID}/subjects`),
-            fetch(`/classrooms/${classroomID}/grades/get?term=${encodeURIComponent(term)}`)
-        ]);
-
+            fetch(`/api/classrooms/${classroomID}/students`, {
+                method: 'GET', // Add the GET method
+                headers: {
+                    "Content-Type": "application/json",
+                    'Authorization': `Bearer ${localStorage.getItem("token")}` // Add your authorization token here
+                }
+            }),
+            fetch(`/api/classrooms/${classroomID}/subjects`, {
+                method: 'GET', // Add the GET method
+                headers: {
+                    "Content-Type": "application/json",
+                    'Authorization': `Bearer ${localStorage.getItem("token")}` // Add your authorization token here
+                }
+            }),
+            fetch(`/api/classrooms/${classroomID}/grades/get?term=${encodeURIComponent(term)}`, {
+                method: 'GET', // Add the GET method
+                headers: {
+                    "Content-Type": "application/json",
+                    'Authorization': `Bearer ${localStorage.getItem("token")}` // Add your authorization token here
+                }
+            })
+        ]); 
         const students = await studentsResponse.json();
         const subjects = await subjectsResponse.json();
         //const gradesData = await gradesResponse.json();
@@ -120,10 +137,11 @@ function uploadGrades(classroomID, students, subjects, term) {
 
     console.log("Grades Data to be uploaded:", JSON.stringify({ grades: gradesData }));
 
-    fetch(`/classrooms/${classroomID}/grades`, {
+    fetch(`/api/classrooms/${classroomID}/grades`, {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json'
+            "Content-Type": "application/json",
+            'Authorization': `Bearer ${localStorage.getItem("token")}`
         },
         body: JSON.stringify({ grades: gradesData })
     })

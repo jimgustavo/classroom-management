@@ -1,149 +1,28 @@
  <!-- static/index.html -->
-
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Classroom Management</title>
+    <title>Welcome to Licen</title>
     <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
     <div class="container">
-        <header>
-            <h1>Classroom Management</h1>
-            <nav>
-                <ul>
-                    <li><a href="#classrooms">Classrooms</a></li>
-                    <li><a href="#students">Students</a></li>
-                    <li><a href="#subjects">Subjects</a></li>
-                    <li><a href="#grade-labels">Grade Labels</a></li>
-                    <li><a href="#terms">Terms</a></li>
-                </ul>
-            </nav>
-        </header>
-        <main>
-            <!--
-            <section id="hero">
-                 Background image 
-                 <div class="background-image"></div> 
-                <div class="overlay"></div>
-                <div class="hero-content">
-            </section>
-                             -->
-            <section id="classrooms">
-                <h2>Classrooms</h2>      
-                    <div id="classroom-container" class="classroom-container">
-                        <!-- Classrooms cards will be dynamically added here -->
-                    </div>
-                <h1>Create Classroom</h1>
-                <form id="classroom-form" action="#" method="post">
-                    <label for="classroom-name">Classroom Name:</label>
-                     <input type="text" id="classroom-name" name="classroom-name" required>
-                     <button type="submit">Submit Classroom</button>
-                </form>
-            </section>
-            <section id="students">
-                <h2>Students</h2> 
-                <div class="section-container">
-                    <ul id="student-list">
-                        <!-- Students will be dynamically added here -->
-                    </ul>
-                </div>
-                <h1>Add Students</h1>
-                <form id="student-form" action="#" method="post">
-                    <label for="student-name">Student Full Name:</label>
-                    <input type="text" id="student-name" name="student-name" required>
-                    <label for="classroom-id">Classroom ID:</label>
-                    
-                    <select id="classroom-assign-dropdown3" name="classroom-assign-dropdown3" required>
-                        <!-- Subjects will be dynamically added here -->
-                    </select>
-                    <button type="submit">Submit Student</button>
-                </form>
-            </section>
-            <section id="subjects">
-                <h2>Subjects</h2>
-                <div class="section-container">
-                    <ul id="subject-list">
-                        <!-- Subjects will be dynamically added here -->
-                    </ul>
-                </div>
-                <h1>Add Subjects</h1>
-                    <form id="subject-form" action="#" method="post">
-                        <label for="subject-name">Subject Name:</label>
-                        <input type="text" id="subject-name" name="subject-name" required>
-                        <button type="submit">Submit Subject</button>
-                    </form>
-                    <h2>Assign Subject to Classroom</h2>
-                    <form id="assign-classroom-form">
-                        <label for="classroom-assign-dropdown">Classroom:</label>
-                        <select id="classroom-assign-dropdown" name="classroom-assign-dropdown" required>
-                            <!-- Subjects will be dynamically added here -->
-                        </select>
-                        <label for="subject-assign-dropdown2">Subject:</label>
-                        <select id="subject-assign-dropdown2" required>
-                            <!-- Grade Labels will be dynamically added here -->
-                        </select>
-                        <button type="submit">Assign Subject</button>
-                    </form>
-            </section>
-            <section id="grade-labels">
-                <h2>Grade Labels</h2>
-                <div class="section-container">
-                    <ul id="grade-label-list">
-                        <!-- Students will be dynamically added here -->
-                    </ul>
-                </div>
-                <h1>Create Grade Label</h1>
-                    <form id="grade-label-form">
-                        <label for="grade-label">Grade Label:</label>
-                        <input type="text" id="grade-label" required>
-                        <button type="submit">Create Grade Label</button>
-                    </form>
-                    <h2>Assign Grade Label to Subject</h2>
-                    <form id="assign-grade-label-form">
-                        <label for="subject-assign-dropdown">Subject:</label>
-                        <select id="subject-assign-dropdown" name="subject-assign-dropdown" required>
-                            <!-- Subjects will be dynamically added here -->
-                        </select>
-                        <label for="term-assign-dropdown">Term:</label>
-                        <select id="term-assign-dropdown" name="term-assign-dropdown" required>
-                            <!-- Terms will be dynamically added here -->
-                        </select>
-                        <label for="grade-label-assign-dropdown">Grade Label:</label>
-                        <select id="grade-label-assign-dropdown" required>
-                            <!-- Grade Labels will be dynamically added here -->
-                        </select>
-                        <button type="submit">Assign Grade Label</button>
-                    </form>
-            </section>
-            <section id="terms">
-                <h2>Terms</h2>
-                <div class="section-container">
-                    <ul id="term-list">
-                        <!-- Terms will be dynamically added here -->
-                    </ul>
-                </div>
-                <h1>Add Term</h1>
-                <form id="term-form" action="#" method="post">
-                    <label for="term-name">Term Name:</label>
-                    <input type="text" id="term-name" name="term-name" required>
-                    <button type="submit">Submit Term</button>
-                </form>
-            </section>
-             <!-- Modal Structure -->
-            <div id="modal" class="modal">
-                <div class="modal-content">
-                    <span id="close-modal" class="close">&times;</span>
-                    <div id="modal-body"></div>
-                </div>
-            </div>
-        </main>
-        <footer>
-            <p>&copy; 2024 TaviTo services. All rights reserved.</p>
-        </footer>
+        <img src="logo.jpg" alt="Licen Logo" class="logo">
+        <h1 class="title">Welcome to Licen</h1>
+        <p class="subtitle">Your tool to manage your classrooms, students, grades, and reports.</p>
+        <form id="login-form" action="#" method="post" class="input-group">
+            <input type="email" id="login-email" name="email" placeholder="Email" required>
+            <input type="password" id="login-password" name="password" placeholder="Password" required>
+            <button type="submit">Login</button>
+        </form>
+        <p>Don't have an account? <a href="signup.html">Sign Up</a></p>
     </div>
+
     <script src="script.js"></script>
 </body>
+
 </html>

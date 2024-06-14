@@ -2,22 +2,13 @@
 
 package models
 
-// GradeInput represents a grade input entity
+// GradeLabel represents a grade label entity
 type GradeLabel struct {
-	ID    int    `json:"id"`
-	Label string `json:"label"`
-}
-
-// GradeLabelWithID represents a grade label with its ID and name
-type GradeLabelWithID struct {
-	ID    int    `json:"id"`
-	Label string `json:"label"`
-}
-
-type GradeLabelSubject struct {
-	SubjectID    int `json:"subject_id"`
-	GradeLabelID int `json:"grade_label_id"`
-	TermID       int `json:"term_id"`
+	ID        int    `json:"id"`
+	Label     string `json:"label"`
+	Date      string `json:"date"`
+	Skill     string `json:"skill"`
+	TeacherID int    `json:"teacher_id"`
 }
 
 type GradeLabelTerm struct {
@@ -25,11 +16,3 @@ type GradeLabelTerm struct {
 	Label  string `json:"label"`
 	TermID int    `json:"term_id"`
 }
-
-/*
-// GradeLabelTermPair represents a pair of grade label ID and term ID
-type GradeLabelTermPair struct {
-	GradeLabelID int `json:"grade_label_id"`
-	TermID       int `json:"term_id"`
-}
-*/
