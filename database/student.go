@@ -4,6 +4,7 @@ package database
 import (
 	"database/sql"
 	"errors"
+	"log"
 
 	"github.com/jimgustavo/classroom-management/models"
 	"github.com/lib/pq"
@@ -22,6 +23,39 @@ func CreateStudent(student *models.Student) error {
 	}
 
 	return nil
+}
+
+func GetStudentsByTeacherID(teacherID int) ([]models.Student, error) {
+	if db == nil {
+		return nil, errors.New("database connection is not initialized")
+	}
+
+	query := "SELECT id, name, COALESCE(classroom_id, 0) as classroom_id, teacher_id FROM students WHERE teacher_id = $1"
+	rows, err := db.Query(query, teacherID)
+	if err != nil {
+		log.Println("Error executing query:", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	var students []models.Student
+	for rows.Next() {
+		var student models.Student
+		err := rows.Scan(&student.ID, &student.Name, &student.ClassroomID, &student.TeacherID)
+		if err != nil {
+			log.Println("Error scanning row:", err)
+			return nil, err
+		}
+		students = append(students, student)
+	}
+
+	if err := rows.Err(); err != nil {
+		log.Println("Error in rows iteration:", err)
+		return nil, err
+	}
+
+	log.Println("Students found:", students)
+	return students, nil
 }
 
 // GetAllStudents retrieves all students from the database
@@ -157,9 +191,9 @@ func GetAllStudentsWithClassroomAndSubjects() ([]models.StudentWithClassroomAndS
 }
 
 // InsertStudent inserts a new student into the database
-func InsertStudent(student *models.Student) error {
-	query := `INSERT INTO students (name, classroom_id) VALUES ($1, $2) RETURNING id`
-	err := db.QueryRow(query, student.Name, student.ClassroomID).Scan(&student.ID)
+func InsertStudent(student *models.Student, teacherID int) error {
+	query := `INSERT INTO students (name, classroom_id, teacher_id) VALUES ($1, $2, $3) RETURNING id`
+	err := db.QueryRow(query, student.Name, student.ClassroomID, teacherID).Scan(&student.ID)
 	if err != nil {
 		return err
 	}

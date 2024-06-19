@@ -11,6 +11,39 @@ import (
 	"github.com/jimgustavo/classroom-management/models"
 )
 
+func GetClassroomsByTeacherID(teacherID int) ([]models.Classroom, error) {
+	if db == nil {
+		return nil, errors.New("database connection is not initialized")
+	}
+
+	query := "SELECT id, name, teacher_id FROM classrooms WHERE teacher_id = $1"
+	rows, err := db.Query(query, teacherID)
+	if err != nil {
+		log.Println("Error executing query:", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	var classrooms []models.Classroom
+	for rows.Next() {
+		var classroom models.Classroom
+		err := rows.Scan(&classroom.ID, &classroom.Name, &classroom.TeacherID)
+		if err != nil {
+			log.Println("Error scanning row:", err)
+			return nil, err
+		}
+		classrooms = append(classrooms, classroom)
+	}
+
+	if err := rows.Err(); err != nil {
+		log.Println("Error in rows iteration:", err)
+		return nil, err
+	}
+
+	log.Println("Classrooms found:", classrooms)
+	return classrooms, nil
+}
+
 // CreateClassroom inserts a new classroom record into the database
 func CreateClassroom(classroom *models.Classroom) error {
 	if db == nil {
@@ -165,11 +198,14 @@ func GetSubjectsInClassroom(classroomID int) ([]models.SubjectWithGradeLabels, e
 
 	query := `
         SELECT subjects.id, subjects.name, 
-               COALESCE(json_agg(json_build_object('id', grade_labels.id, 'label', grade_labels.label, 'term_id', grade_labels_subjects.term_id)) FILTER (WHERE grade_labels.id IS NOT NULL), '[]')
+               COALESCE(
+                    (SELECT json_agg(DISTINCT jsonb_build_object('id', grade_labels.id, 'label', grade_labels.label, 'term_id', grade_labels_subjects.term_id))
+                     FROM grade_labels
+                     JOIN grade_labels_subjects ON grade_labels.id = grade_labels_subjects.grade_label_id
+                     WHERE grade_labels_subjects.subject_id = subjects.id
+                    ), '[]'::json)
         FROM subjects
         LEFT JOIN classroom_subjects ON subjects.id = classroom_subjects.subject_id
-        LEFT JOIN grade_labels_subjects ON subjects.id = grade_labels_subjects.subject_id
-        LEFT JOIN grade_labels ON grade_labels.id = grade_labels_subjects.grade_label_id
         WHERE classroom_subjects.classroom_id = $1
         GROUP BY subjects.id, subjects.name
     `

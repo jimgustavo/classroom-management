@@ -2,9 +2,44 @@ package database
 
 import (
 	"database/sql"
+	"errors"
+	"log"
 
 	"github.com/jimgustavo/classroom-management/models"
 )
+
+func GetTermsByTeacherID(teacherID int) ([]models.Term, error) {
+	if db == nil {
+		return nil, errors.New("database connection is not initialized")
+	}
+
+	query := "SELECT id, name, teacher_id FROM terms WHERE teacher_id = $1"
+	rows, err := db.Query(query, teacherID)
+	if err != nil {
+		log.Println("Error executing query:", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	var terms []models.Term
+	for rows.Next() {
+		var term models.Term
+		err := rows.Scan(&term.ID, &term.Name, &term.TeacherID)
+		if err != nil {
+			log.Println("Error scanning row:", err)
+			return nil, err
+		}
+		terms = append(terms, term)
+	}
+
+	if err := rows.Err(); err != nil {
+		log.Println("Error in rows iteration:", err)
+		return nil, err
+	}
+
+	log.Println("Terms found:", terms)
+	return terms, nil
+}
 
 // GetAllTerms retrieves all terms from the database
 func GetAllTerms() ([]models.Term, error) {

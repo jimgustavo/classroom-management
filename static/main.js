@@ -13,6 +13,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const studentForm = document.getElementById("student-form");
     studentForm.addEventListener("submit", createStudent);
 
+    const uploadStudentsForm = document.getElementById("upload-students-form");
+    uploadStudentsForm.addEventListener("submit", uploadStudentsFromExcel);
+
     const subjectForm = document.getElementById("subject-form");
     subjectForm.addEventListener("submit", createSubject);
 
@@ -61,12 +64,12 @@ async function logout() {
 async function fetchClassrooms() {
     try {
         const token = localStorage.getItem("token");
-        //const teacher_id = localStorage.getItem("teacher_id");
+        const teacherID = localStorage.getItem("teacher_id");
         //const teacher_name = localStorage.getItem("teacher_name");
-        //console.log("token:", token);
+        console.log("token:", token);
         //console.log("teacher_id:", teacher_id);
         //console.log("teacher_name:", teacher_name);
-        const response = await fetch("/api/classrooms", {
+        const response = await fetch(`/api/classrooms/teacher/${teacherID}`, {
             headers: {
                 "Authorization": `Bearer ${token}`
             }
@@ -111,11 +114,13 @@ function displayClassrooms(classrooms) {
         showSubjectsBtn.classList.add("show-subjects-btn");
         showSubjectsBtn.addEventListener("click", async () => {
             // Fetch terms for the modal
-            const termsResponse = await fetch(`/api/terms`, {
+            const token = localStorage.getItem("token");
+            const teacherID = localStorage.getItem("teacher_id");
+            const termsResponse = await fetch(`/api/terms/teacher/${teacherID}`, {
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": `Bearer ${localStorage.getItem("token")}`
+                    "Authorization": `Bearer ${token}`
                 },
             })
             const subjectResponse = await fetch(`/api/classrooms/${classroom.id}/subjects`, {
@@ -144,11 +149,13 @@ function displayClassrooms(classrooms) {
         addGradesBtn.classList.add("add-grades-btn");
         addGradesBtn.addEventListener("click", async () => {
             // Fetch terms for the modal
-            const response = await fetch(`/api/terms`, {
+            const token = localStorage.getItem("token");
+            const teacherID = localStorage.getItem("teacher_id");
+            const response = await fetch(`/api/terms/teacher/${teacherID}`, {
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": `Bearer ${localStorage.getItem("token")}`
+                    "Authorization": `Bearer ${token}`
                 },
             })
             const terms = await response.json();
@@ -161,11 +168,13 @@ function displayClassrooms(classrooms) {
         gradesBtn.classList.add("grades-btn");
         gradesBtn.addEventListener("click", async () => {
             // Fetch terms for the modal
-            const response = await fetch(`/api/terms`, {
+            const token = localStorage.getItem("token");
+            const teacherID = localStorage.getItem("teacher_id");
+            const response = await fetch(`/api/terms/teacher/${teacherID}`, {
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": `Bearer ${localStorage.getItem("token")}`
+                    "Authorization": `Bearer ${token}`
                 },
             })
             const terms = await response.json();
@@ -463,9 +472,12 @@ function displayTermsModalToUploadGrades(classroomId, classroomName, terms) {
 
 async function fetchStudents() {
     try {
-        const response = await fetch("/api/students", {
+        const token = localStorage.getItem("token");
+        const teacherID = localStorage.getItem("teacher_id");
+
+        const response = await fetch(`/api/students/teacher/${teacherID}`, {
             headers: {
-                "Authorization": `Bearer ${localStorage.getItem("token")}`
+                "Authorization": `Bearer ${token}`
             }
         });
         const students = await response.json();
@@ -502,14 +514,15 @@ async function createStudent(event) {
 
     const studentName = document.getElementById("student-name").value;
     const classroomID = parseInt(document.getElementById("classroom-assign-dropdown3").value);
-    const teacherID = parseInt(localStorage.getItem("teacher_id"));
-
     try {
+        const token = localStorage.getItem("token");
+        const teacherID = parseInt(localStorage.getItem("teacher_id"));
+
         const response = await fetch("/api/students", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                "Authorization": `Bearer ${localStorage.getItem("token")}`
+                "Authorization": `Bearer ${token}`
             },
             body: JSON.stringify({ name: studentName, classroom_id: classroomID, teacher_id: teacherID })
         });
@@ -523,6 +536,42 @@ async function createStudent(event) {
     } catch (error) {
         console.error("Error creating student:", error);
         alert("An error occurred while creating the student. Please try again later.");
+    }
+}
+
+async function uploadStudentsFromExcel(event) {
+    event.preventDefault();
+
+    const classroomID = parseInt(document.getElementById("classroom-assign-dropdown4").value);
+    const startCell = document.getElementById("startCell").value;
+    const endCell = document.getElementById("endCell").value;
+    const sheetName = document.getElementById("sheetName").value;
+
+    const formData = new FormData();
+    formData.append("file", document.getElementById("file-upload").files[0]);
+
+    try {
+        const token = localStorage.getItem("token");
+        const teacherID = parseInt(localStorage.getItem("teacher_id"));
+        const response = await fetch(`/api/classrooms/${classroomID}/upload-students/${teacherID}?startCell=${startCell}&endCell=${endCell}&sheetName=${sheetName}`, {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${token}`
+            },
+            body: formData
+        });
+
+        if (response.ok) {
+            alert("Students uploaded successfully from Excel!");
+            // Optionally, you can refresh any related data or UI here
+        } else {
+            const errorText = await response.text(); // Read the error response as text
+            alert(`Failed to upload students from Excel: ${errorText}`);
+        }
+
+    } catch (error) {
+        console.error("Error uploading students from Excel:", error);
+        alert("An error occurred while uploading students from Excel. Please try again later.");
     }
 }
 
@@ -553,9 +602,12 @@ async function deleteStudent(studentId) {
 //////////////////**********SUBJECT SECTION**************////////////////////////////
 async function fetchSubjects() {
     try {
-        const response = await fetch("/api/subjects", {
+        const token = localStorage.getItem("token");
+        const teacherID = localStorage.getItem("teacher_id");
+
+        const response = await fetch(`/api/subjects/teacher/${teacherID}`, {
             headers: {
-                "Authorization": `Bearer ${localStorage.getItem("token")}`
+                "Authorization": `Bearer ${token}`
             }
         });
         const subjects = await response.json();
@@ -587,11 +639,13 @@ function displaySubjects(subjects) {
         gradeLabelBtn.classList.add("grade-label-btn");
         gradeLabelBtn.addEventListener("click", async () => {
             // Fetch terms for the modal
-            const response = await fetch(`/api/subjects`, {
+            const token = localStorage.getItem("token");
+            const teacherID = localStorage.getItem("teacher_id");
+            const response = await fetch(`/api/subjects/teacher/${teacherID}`, {
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": `Bearer ${localStorage.getItem("token")}`
+                    "Authorization": `Bearer ${token}`
                 },
             })
             const subjects = await response.json();
@@ -787,9 +841,12 @@ async function assignSubjectToClassroom(event) {
 // Function to fetch and display grade labels
 async function fetchGradeLabels() {
     try {
-        const response = await fetch("/api/grade-labels", {
+        const token = localStorage.getItem("token");
+        const teacherID = localStorage.getItem("teacher_id");
+
+        const response = await fetch(`/api/grade-labels/teacher/${teacherID}`, {
             headers: {
-                "Authorization": `Bearer ${localStorage.getItem("token")}`
+                "Authorization": `Bearer ${token}`
             }
         });
         const gradeLabels = await response.json();
@@ -826,10 +883,11 @@ function displayGradeLabels(gradeLabels) {
 // Function to delete a grade label
 async function deleteGradeLabel(gradeLabelId) {
     try {
+        const token = localStorage.getItem("token");
         const response = await fetch(`/api/grade-labels/${gradeLabelId}`, {
             method: "DELETE",
             headers: {
-                "Authorization": `Bearer ${localStorage.getItem("token")}`
+                "Authorization": `Bearer ${token}`
             },
         });
         if (response.ok) {
@@ -865,10 +923,11 @@ async function createGradeLabel(event) {
             },
             body: JSON.stringify({ label: gradeLabel, date: gradeDate, skill: gradeSkill, teacher_id: teacherID })
         });
-
+        
         if (response.ok) {
             alert("Grade label created successfully!");
             fetchGradeLabels(); // Refresh the grade label list
+            console.log("grade label body:", JSON.stringify({ label: gradeLabel, date: gradeDate, skill: gradeSkill, teacher_id: teacherID }));
         } else {
             const errorData = await response.json();
             alert(`Failed to create grade label: ${errorData.message}`);
@@ -881,17 +940,20 @@ async function createGradeLabel(event) {
 
 async function assignGradeLabelToSubject(event) {
     event.preventDefault();
+    console.log("Form submission intercepted");
 
     const subjectID = parseInt(document.getElementById("subject-assign-dropdown").value);
     const gradeLabelID = parseInt(document.getElementById("grade-label-assign-dropdown").value);
     const termID = parseInt(document.getElementById("term-assign-dropdown").value);
 
     try {
+        const token = localStorage.getItem("token");
+        console.log(`Submitting assignment: subjectID=${subjectID}, gradeLabelID=${gradeLabelID}, termID=${termID}`);
         const response = await fetch(`/api/subjects/${subjectID}/grade-labels/${gradeLabelID}/terms/${termID}`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                 "Authorization": `Bearer ${localStorage.getItem("token")}`
+                 "Authorization": `Bearer ${token}`
             }
         });
 
@@ -910,9 +972,11 @@ async function assignGradeLabelToSubject(event) {
 
 async function fetchTerms() {
     try {
-        const response = await fetch("/api/terms", {
+        const token = localStorage.getItem("token");
+        const teacherID = localStorage.getItem("teacher_id");
+        const response = await fetch(`/api/terms/teacher/${teacherID}`, {
             headers: {
-                "Authorization": `Bearer ${localStorage.getItem("token")}`
+                "Authorization": `Bearer ${token}`
             }
         });
         const terms = await response.json();
@@ -949,6 +1013,7 @@ async function createTerm(event) {
     event.preventDefault();
 
     const termName = document.getElementById("term-name").value;
+    const token = localStorage.getItem("token");
     const teacherID = parseInt(localStorage.getItem("teacher_id"));
 
     try {
@@ -956,7 +1021,7 @@ async function createTerm(event) {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                "Authorization": `Bearer ${localStorage.getItem("token")}`
+                "Authorization": `Bearer ${token}`
             },
             body: JSON.stringify({ name: termName, teacher_id: teacherID })
         });
@@ -997,9 +1062,12 @@ async function deleteTerm(termId) {
 }
 
 function deleteGradeLabelfromSubjectByTerm(subjectID, gradeLabelID, termID) {
-    
-    fetch(`/subjects/${subjectID}/grade-labels/${gradeLabelID}/terms/${termID}`, {
-        method: 'DELETE'
+    const token = localStorage.getItem("token");
+    fetch(`/api/subjects/${subjectID}/grade-labels/${gradeLabelID}/terms/${termID}`, {
+        method: 'DELETE',
+        headers: {
+            "Authorization": `Bearer ${token}`
+        }
     })
     .then(response => {
         if (response.ok) {
@@ -1018,8 +1086,10 @@ function deleteGradeLabelfromSubjectByTerm(subjectID, gradeLabelID, termID) {
 function populateClassroomDropdown(classrooms) {
     const classroomDropdown = document.getElementById("classroom-assign-dropdown");
     const classroomDropdown3 = document.getElementById("classroom-assign-dropdown3");
+    const classroomDropdown4 = document.getElementById("classroom-assign-dropdown4");
     classroomDropdown.innerHTML = ""; // Clear existing options
     classroomDropdown3.innerHTML = ""; // Clear existing options
+    classroomDropdown4.innerHTML = ""; // Clear existing options
 
     classrooms.forEach(classroom => {
         const option = document.createElement("option");
@@ -1031,6 +1101,11 @@ function populateClassroomDropdown(classrooms) {
         optionAssign3.value = classroom.id;
         optionAssign3.textContent = classroom.name;
         classroomDropdown3.appendChild(optionAssign3);
+
+        const optionAssign4 = document.createElement("option");
+        optionAssign4.value = classroom.id;
+        optionAssign4.textContent = classroom.name;
+        classroomDropdown4.appendChild(optionAssign4);
     });
 }
 

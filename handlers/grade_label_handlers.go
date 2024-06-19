@@ -11,23 +11,59 @@ import (
 	"github.com/jimgustavo/classroom-management/models"
 )
 
+func GetGradeLabelsByTeacherID(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	teacherID, err := strconv.Atoi(vars["teacherID"])
+	if err != nil {
+		log.Println("Invalid teacher ID:", err)
+		http.Error(w, "Invalid teacher ID", http.StatusBadRequest)
+		return
+	}
+
+	log.Println("Fetching grade labels for teacher ID:", teacherID)
+	gradeLabels, err := database.GetGradeLabelsByTeacherID(teacherID)
+	if err != nil {
+		log.Println("Error fetching grade labels:", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	log.Println("Fetched grade labels:", gradeLabels)
+	if err := json.NewEncoder(w).Encode(gradeLabels); err != nil {
+		log.Println("Error encoding response:", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
 // CreateGradeLabel handles the creation of a new grade label
 func CreateGradeLabel(w http.ResponseWriter, r *http.Request) {
 	var gradeLabel models.GradeLabel
 	err := json.NewDecoder(r.Body).Decode(&gradeLabel)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, createJSONError("Invalid request payload", err.Error()), http.StatusBadRequest)
 		return
 	}
 
 	err = database.CreateGradeLabel(&gradeLabel)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, createJSONError("Failed to create grade label", err.Error()), http.StatusInternalServerError)
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(gradeLabel)
+}
+
+// createJSONError creates a JSON error response
+func createJSONError(message, details string) string {
+	errorResponse := map[string]string{
+		"message": message,
+		"details": details,
+	}
+	errorJSON, _ := json.Marshal(errorResponse)
+	return string(errorJSON)
 }
 
 // GetAllGradeLabels retrieves all grade labels

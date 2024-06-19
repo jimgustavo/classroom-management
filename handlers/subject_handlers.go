@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -9,6 +10,31 @@ import (
 	"github.com/jimgustavo/classroom-management/database"
 	"github.com/jimgustavo/classroom-management/models"
 )
+
+func GetSubjectsByTeacherID(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	teacherID, err := strconv.Atoi(vars["teacherID"])
+	if err != nil {
+		log.Println("Invalid teacher ID:", err)
+		http.Error(w, "Invalid teacher ID", http.StatusBadRequest)
+		return
+	}
+
+	log.Println("Fetching subjects for teacher ID:", teacherID)
+	subjects, err := database.GetSubjectsByTeacherID(teacherID)
+	if err != nil {
+		log.Println("Error fetching subjects:", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	log.Println("Fetched subjects:", subjects)
+	if err := json.NewEncoder(w).Encode(subjects); err != nil {
+		log.Println("Error encoding response:", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
 
 // CreateSubject handles the creation of a new subject
 func CreateSubject(w http.ResponseWriter, r *http.Request) {

@@ -10,24 +10,23 @@ document.addEventListener("DOMContentLoaded", async () => {
     try {
         const [studentsResponse, subjectsResponse, averagesResponse] = await Promise.all([
             fetch(`/api/classrooms/${classroomID}/students`, {
-                method: 'GET', // Add the GET method
+                method: 'GET', 
                 headers: {
                     "Content-Type": "application/json",
-                    'Authorization': `Bearer ${localStorage.getItem("token")}` // Add your authorization token here
+                    'Authorization': `Bearer ${localStorage.getItem("token")}` 
                 }
             }),
             fetch(`/api/classrooms/${classroomID}/subjects`, {
-                method: 'GET', // Add the GET method
+                method: 'GET', 
                 headers: {
                     "Content-Type": "application/json",
-                    'Authorization': `Bearer ${localStorage.getItem("token")}` // Add your authorization token here
+                    'Authorization': `Bearer ${localStorage.getItem("token")}` 
                 }
             }),
-            fetch(`/api/classrooms/${classroomID}/averages`, {
-                method: 'GET', // Add the GET method
+            fetch(`/classroom/1/averageswithfactors?bimestre1=0.8&bimestre2=0.2`, {
+                method: 'GET', 
                 headers: {
                     "Content-Type": "application/json",
-                    'Authorization': `Bearer ${localStorage.getItem("token")}` // Add your authorization token here
                 }
             }),
         ]);
@@ -75,10 +74,13 @@ function generateGradesGrid(gridElement, students, averagesData, subjectID) {
 
     // Assuming terms are consistent across subjects
     const terms = averagesData.averages[0].averages.map(avg => avg.term);
-
+    
     terms.forEach(term => {
         const termHeaderCell = headerRow.insertCell();
         termHeaderCell.textContent = term;
+         // Add average-factor header
+        const averageFactorHeaderCell = headerRow.insertCell();
+        averageFactorHeaderCell.textContent = `Average-%`;
     });
 
     // Add final-average header
@@ -101,13 +103,18 @@ function generateGradesGrid(gridElement, students, averagesData, subjectID) {
             const termAverageCell = row.insertCell();
             termAverageCell.contentEditable = false;
 
+            const factorAverageCell = row.insertCell();
+            factorAverageCell.contentEditable = false;
+
             // Find the corresponding average for this student, subject, and term
             const studentAverage = averagesData.averages.find(a => a.student_id === student.id && a.subject_id === subjectID);
             if (studentAverage) {
                 const termAverage = studentAverage.averages.find(t => t.term === term);
+                console.log("termAverage:", termAverage);
                 if (termAverage) {
                     termAverageCell.textContent = termAverage.average.toFixed(2);
-                    totalAverage += parseFloat(termAverage.average);
+                    factorAverageCell.textContent = termAverage.ave_factor.toFixed(2);
+                    totalAverage += parseFloat(termAverage.ave_factor);
                     termCount++;
                 } else {
                     termAverageCell.textContent = 'N/A';
@@ -119,7 +126,7 @@ function generateGradesGrid(gridElement, students, averagesData, subjectID) {
 
         // Calculate and add final average
         const finalAverageCell = row.insertCell();
-        const finalAverage = termCount > 0 ? (totalAverage / termCount).toFixed(2) : '0.00';
+        const finalAverage = termCount > 0 ? (totalAverage).toFixed(2) : '0.00';
         finalAverageCell.textContent = finalAverage;
     });
 }

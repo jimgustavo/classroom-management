@@ -10,6 +10,39 @@ import (
 	"github.com/jimgustavo/classroom-management/models"
 )
 
+func GetGradeLabelsByTeacherID(teacherID int) ([]models.GradeLabel, error) {
+	if db == nil {
+		return nil, errors.New("database connection is not initialized")
+	}
+
+	query := "SELECT id, label, date, skill, teacher_id FROM grade_labels WHERE teacher_id = $1"
+	rows, err := db.Query(query, teacherID)
+	if err != nil {
+		log.Println("Error executing query:", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	var gradeLabels []models.GradeLabel
+	for rows.Next() {
+		var gradeLabel models.GradeLabel
+		err := rows.Scan(&gradeLabel.ID, &gradeLabel.Label, &gradeLabel.Date, &gradeLabel.Skill, &gradeLabel.TeacherID)
+		if err != nil {
+			log.Println("Error scanning row:", err)
+			return nil, err
+		}
+		gradeLabels = append(gradeLabels, gradeLabel)
+	}
+
+	if err := rows.Err(); err != nil {
+		log.Println("Error in rows iteration:", err)
+		return nil, err
+	}
+
+	log.Println("Grade labels found:", gradeLabels)
+	return gradeLabels, nil
+}
+
 // CreateGradeLabel inserts a new grade label into the database
 func CreateGradeLabel(gradeLabel *models.GradeLabel) error {
 	if db == nil {
@@ -19,7 +52,7 @@ func CreateGradeLabel(gradeLabel *models.GradeLabel) error {
 	query := "INSERT INTO grade_labels (label, date, skill, teacher_id) VALUES ($1, $2, $3, $4) RETURNING id"
 	err := db.QueryRow(query, gradeLabel.Label, gradeLabel.Date, gradeLabel.Skill, gradeLabel.TeacherID).Scan(&gradeLabel.ID)
 	if err != nil {
-		return err
+		return errors.New("error inserting grade label: " + err.Error())
 	}
 	return nil
 }

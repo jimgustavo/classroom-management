@@ -4,9 +4,43 @@ package database
 
 import (
 	"errors"
+	"log"
 
 	"github.com/jimgustavo/classroom-management/models"
 )
+
+func GetSubjectsByTeacherID(teacherID int) ([]models.Subject, error) {
+	if db == nil {
+		return nil, errors.New("database connection is not initialized")
+	}
+
+	query := "SELECT id, name, teacher_id FROM subjects WHERE teacher_id = $1"
+	rows, err := db.Query(query, teacherID)
+	if err != nil {
+		log.Println("Error executing query:", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	var subjects []models.Subject
+	for rows.Next() {
+		var subject models.Subject
+		err := rows.Scan(&subject.ID, &subject.Name, &subject.TeacherID)
+		if err != nil {
+			log.Println("Error scanning row:", err)
+			return nil, err
+		}
+		subjects = append(subjects, subject)
+	}
+
+	if err := rows.Err(); err != nil {
+		log.Println("Error in rows iteration:", err)
+		return nil, err
+	}
+
+	log.Println("Subjects found:", subjects)
+	return subjects, nil
+}
 
 // CreateSubject inserts a new subject record into the database
 func CreateSubject(subject *models.Subject) error {

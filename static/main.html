@@ -58,11 +58,26 @@
                     <label for="student-name">Student Full Name:</label>
                     <input type="text" id="student-name" name="student-name" required>
                     <label for="classroom-id">Classroom ID:</label>
-                    
                     <select id="classroom-assign-dropdown3" name="classroom-assign-dropdown3" required>
                         <!-- Subjects will be dynamically added here -->
                     </select>
                     <button type="submit">Submit Student</button>
+                </form>
+                <h2>Upload Students from Excel</h2>
+                <form id="upload-students-form" action="#" method="post">
+                    <label for="file-upload">Upload Excel File:</label>
+                    <input type="file" id="file-upload" name="file-upload" accept=".xlsx,.xls" required>
+            
+                    <!-- Hidden inputs for additional parameters -->
+                    <input type="text" id="startCell" name="startCell" value="A1">
+                    <input type="text" id="endCell" name="endCell" value="B10">
+                    <input type="text" id="sheetName" name="sheetName" value="Sheet1">
+            
+                    <select id="classroom-assign-dropdown4" name="classroom-assign-dropdown4" required>
+                        <!-- Subjects will be dynamically added here -->
+                    </select>
+
+                    <button type="submit">Upload Students</button>
                 </form>
             </section>
             <section id="subjects">

@@ -13,6 +13,23 @@ import (
 	"github.com/jimgustavo/classroom-management/models"
 )
 
+func GetClassroomsByTeacherID(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	teacherID, err := strconv.Atoi(vars["teacherID"])
+	if err != nil {
+		http.Error(w, "Invalid teacher ID", http.StatusBadRequest)
+		return
+	}
+
+	classrooms, err := database.GetClassroomsByTeacherID(teacherID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(classrooms)
+}
+
 // CreateClassroom handles the creation of a new classroom
 func CreateClassroom(w http.ResponseWriter, r *http.Request) {
 	var classroom models.Classroom
@@ -215,15 +232,3 @@ func RemoveSubjectFromClassroom(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusNoContent)
 }
-
-/*
-func GetAllClassrooms(w http.ResponseWriter, r *http.Request) {
-    teacherID := r.Context().Value("teacherID").(int) // Assuming you have middleware that sets this
-    classrooms, err := database.GetClassroomsByTeacherID(teacherID)
-    if err != nil {
-        http.Error(w, err.Error(), http.StatusInternalServerError)
-        return
-    }
-    json.NewEncoder(w).Encode(classrooms)
-}
-*/

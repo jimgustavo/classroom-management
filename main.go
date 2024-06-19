@@ -37,13 +37,22 @@ func main() {
 	router.HandleFunc("/logout", handlers.Logout)
 	router.HandleFunc("/teachers", handlers.GetAllTeachersHandler).Methods("GET")
 	router.HandleFunc("/teachers/{id}", handlers.DeleteTeacherHandler).Methods("DELETE")
+	router.HandleFunc("/classrooms", handlers.GetAllClassrooms).Methods("GET")
+	router.HandleFunc("/students", handlers.GetAllStudents).Methods("GET")
+	router.HandleFunc("/subjects", handlers.GetAllSubjects).Methods("GET")
+	router.HandleFunc("/grade-labels", handlers.GetAllGradeLabels).Methods("GET")
+	router.HandleFunc("/terms", handlers.GetAllTerms).Methods("GET")
+	router.HandleFunc("/subjects/{subjectID}/terms/{termID}/grade-labels", handlers.GetGradeLabelsForSubject).Methods("GET")
+	router.HandleFunc("/classrooms/{classroomID}/averages", handlers.GetAverageGradesByClassroomID).Methods("GET")
+	router.HandleFunc("/classroom/{classroomID}/averageswithfactors", handlers.GetAveragesWithFactorsByClassroomID).Methods("GET")
+	router.HandleFunc("/classrooms/{classroomID}/terms/{termID}/grades/report", handlers.GenerateTeacherGradesReport).Methods("GET")
 
 	// Protected routes
 	apiRouter := router.PathPrefix("/api").Subrouter()
 	apiRouter.Use(middleware.Authenticate)
 
 	// Classroom routes
-	apiRouter.HandleFunc("/classrooms", handlers.GetAllClassrooms).Methods("GET")
+	apiRouter.HandleFunc("/classrooms/teacher/{teacherID}", handlers.GetClassroomsByTeacherID).Methods("GET")
 	apiRouter.HandleFunc("/classrooms/{id}", handlers.GetClassroom).Methods("GET")
 	apiRouter.HandleFunc("/classrooms/{classroomID}/subjects", handlers.GetSubjectsInClassroom).Methods("GET")
 	apiRouter.HandleFunc("/classrooms/{classroom_id}/students", handlers.GetStudentsByClassroom).Methods("GET")
@@ -53,14 +62,14 @@ func main() {
 	apiRouter.HandleFunc("/classrooms", handlers.CreateClassroom).Methods("POST")
 	apiRouter.HandleFunc("/classrooms/{classroomID}/subject/{subjectID}", handlers.AddSubjectToClassroom).Methods("POST")
 	apiRouter.HandleFunc("/classrooms/{classroomID}/grades", handlers.UploadGradesToClassroom).Methods("POST")
-	apiRouter.HandleFunc("/classrooms/{classroomID}/upload-students", handlers.UploadStudentsFromExcel).Methods("POST") // for uploading students from an Excel file
+	apiRouter.HandleFunc("/classrooms/{classroomID}/upload-students/{teacherID}", handlers.UploadStudentsFromExcel).Methods("POST") // for uploading students from an Excel file
 	apiRouter.HandleFunc("/classrooms/{id}", handlers.UpdateClassroom).Methods("PUT")
 	apiRouter.HandleFunc("/classrooms/{id}", handlers.DeleteClassroom).Methods("DELETE")
 	apiRouter.HandleFunc("/classrooms/{classroomID}/students/{studentID}", handlers.UnrollStudentFromClassroom).Methods("DELETE")
 	apiRouter.HandleFunc("/classrooms/{classroomID}/subjects/{subjectID}", handlers.RemoveSubjectFromClassroom).Methods("DELETE")
 
 	// Student routes
-	apiRouter.HandleFunc("/students", handlers.GetAllStudents).Methods("GET")
+	apiRouter.HandleFunc("/students/teacher/{teacherID}", handlers.GetStudentsByTeacherID).Methods("GET")
 	apiRouter.HandleFunc("/students/with-classroom-and-subjects", handlers.GetAllStudentsWithClassroomAndSubjects).Methods("GET")
 	apiRouter.HandleFunc("/students/{id}", handlers.GetStudent).Methods("GET")
 	apiRouter.HandleFunc("/students/{studentID}/subjects", handlers.GetSubjectsByStudentID).Methods("GET")
@@ -69,7 +78,7 @@ func main() {
 	apiRouter.HandleFunc("/students/{id}", handlers.DeleteStudent).Methods("DELETE")
 
 	// Subject routes
-	apiRouter.HandleFunc("/subjects", handlers.GetAllSubjects).Methods("GET")
+	apiRouter.HandleFunc("/subjects/teacher/{teacherID}", handlers.GetSubjectsByTeacherID).Methods("GET")
 	apiRouter.HandleFunc("/subjects/{id}", handlers.GetSubject).Methods("GET")
 	apiRouter.HandleFunc("/subjects/{subjectID}/students", handlers.GetStudentsBySubjectID).Methods("GET")
 	apiRouter.HandleFunc("/subjects/{subjectID}/terms", handlers.GetTermsBySubjectID).Methods("GET")
@@ -81,18 +90,25 @@ func main() {
 	apiRouter.HandleFunc("/subjects/{subjectID}/grade-labels/{gradeLabelID}/terms/{termID}", handlers.RemoveGradeLabelFromSubjectByTerm).Methods("DELETE")
 
 	// Grade Labels routes
+	apiRouter.HandleFunc("/grade-labels/teacher/{teacherID}", handlers.GetGradeLabelsByTeacherID).Methods("GET")
 	apiRouter.HandleFunc("/grade-labels", handlers.CreateGradeLabel).Methods("POST")
-	apiRouter.HandleFunc("/grade-labels", handlers.GetAllGradeLabels).Methods("GET")
 	apiRouter.HandleFunc("/grade-labels/{id}", handlers.GetGradeLabel).Methods("GET")
 	apiRouter.HandleFunc("/grade-labels/{id}", handlers.UpdateGradeLabel).Methods("PUT")
 	apiRouter.HandleFunc("/grade-labels/{id}", handlers.DeleteGradeLabel).Methods("DELETE")
 
 	// Term routes
-	apiRouter.HandleFunc("/terms", handlers.GetAllTerms).Methods("GET")
+	apiRouter.HandleFunc("/terms/teacher/{teacherID}", handlers.GetTermsByTeacherID).Methods("GET")
 	apiRouter.HandleFunc("/terms/{id}", handlers.GetTerm).Methods("GET")
 	apiRouter.HandleFunc("/terms", handlers.CreateTerm).Methods("POST")
 	apiRouter.HandleFunc("/terms/{id}", handlers.UpdateTerm).Methods("PUT")
 	apiRouter.HandleFunc("/terms/{id}", handlers.DeleteTerm).Methods("DELETE")
+
+	// Reports routes
+	apiRouter.HandleFunc("/classrooms/{classroomID}/terms/{termID}/grades/report", handlers.GenerateTeacherGradesReport).Methods("GET")
+
+	/* NOT USED FOR NOW
+
+	 */
 
 	// Serve static files from the "static" directory
 	router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
@@ -104,61 +120,6 @@ func main() {
 }
 
 /*
-///////////////PROJECT STRUCTURE//////////////////////
-
-classroom-management/
-│
-├── main.go
-│
-├── handlers/
-│   ├── classroom_handlers.go
-│   ├── grade_handlers.go
-│   ├── grade_label_handlers.go
-│   ├── student_handlers.go
-│   ├── subject_handlers.go
-│   ├── teacher_handlers.go
-│   └── term_handlers.go
-│
-├── models/
-│   ├── classroom.go
-│   ├── grade_label.go
-│   ├── grade.go
-│   ├── student.go
-│   ├── subject.go
-│   ├── teacher.go
-│   └── term.go
-│
-├── database/
-│   ├── database.go
-│   ├── classroom.go
-│   ├── grade_label.go
-│   ├── grade.go
-│   ├── student.go
-│   ├── subject.go
-│   ├── teacher.go
-│   └── term.go
-│
-├── middleware/
-│   └── auth.go
-│
-├── classroom_management.sql
-├── go.mod
-├── go.sum
-└── static/
-    ├── index.html
-    ├── script.js
-    ├── styles.css
-	├── main.html
-    ├── main.js
-    ├── main.css
-	├── signup.html
-    ├── classroom-grades-display.html
-    ├── classroom-grades-display.js
-    ├── classroom-grades-display.css
-    ├── classroom-grades-upload.html
-    ├── classroom-grades-upload.js
-    └── classroom-grades-upload.css
-
 ///////////Postgres Database//////////
 psql
 
@@ -229,7 +190,10 @@ curl -X POST http://localhost:8080/api/classrooms \
 Get all Classrooms:
 
 curl -X GET http://localhost:8080/api/classrooms \
-    -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZWFjaGVyX2lkIjoxLCJleHAiOjE3MTgzODE5NjN9.J7v5VPJgaRgaVCgZqOL4KG9aUHe8RvGqG5JLM7dHSCc"
+    -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZWFjaGVyX2lkIjo2LCJleHAiOjE3MTg1MDY4MTd9.aYaUjQN3j_-5xEgzaLntBxDOK1ZkEr_xpmj8HTI-Kxw"
+
+curl -X GET http://localhost:8080/api/classrooms/teacher/4 \
+    -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZWFjaGVyX2lkIjo2LCJleHAiOjE3MTg1MDY4MTd9.aYaUjQN3j_-5xEgzaLntBxDOK1ZkEr_xpmj8HTI-Kxw"
 
 
 Create a Student:
@@ -244,8 +208,11 @@ curl -X POST http://localhost:8080/api/students \
     }'
 Get all students:
 
-curl -X GET http://localhost:8080/api/students \
-    -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZWFjaGVyX2lkIjoxLCJleHAiOjE3MTg0MDUyOTZ9.l0dx49smDnHw9hIVHJpBfygumPUp9hJLKI2fRDjNagU"
+curl -X GET http://localhost:8080/api/students/ \
+    -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZWFjaGVyX2lkIjo0LCJleHAiOjE3MTg1MTE3OTh9.RLvS-QfxBuhMHmNaEaUwMPh-Qu5b76x-tK4vGBXqvLM"
+
+curl -X GET http://localhost:8080/api/students/teacher/4 \
+    -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZWFjaGVyX2lkIjo0LCJleHAiOjE3MTg1MTE3OTh9.RLvS-QfxBuhMHmNaEaUwMPh-Qu5b76x-tK4vGBXqvLM"
 
 
 Update a Student:

@@ -32,6 +32,31 @@ func CreateStudent(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(student)
 }
 
+func GetStudentsByTeacherID(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	teacherID, err := strconv.Atoi(vars["teacherID"])
+	if err != nil {
+		log.Println("Invalid teacher ID:", err)
+		http.Error(w, "Invalid teacher ID", http.StatusBadRequest)
+		return
+	}
+
+	log.Println("Fetching students for teacher ID:", teacherID)
+	students, err := database.GetStudentsByTeacherID(teacherID)
+	if err != nil {
+		log.Println("Error fetching students:", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	log.Println("Fetched students:", students)
+	if err := json.NewEncoder(w).Encode(students); err != nil {
+		log.Println("Error encoding response:", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
 // GetAllStudents retrieves all students
 func GetAllStudents(w http.ResponseWriter, r *http.Request) {
 	students, err := database.GetAllStudents()
@@ -149,15 +174,23 @@ func GetStudentsBySubjectID(w http.ResponseWriter, r *http.Request) {
 
 // UploadStudentsFromExcel handles uploading students from an Excel file
 func UploadStudentsFromExcel(w http.ResponseWriter, r *http.Request) {
-	classroomID := mux.Vars(r)["classroomID"]
+	vars := mux.Vars(r)
+	classroomID := vars["classroomID"]
+	teacherID := vars["teacherID"]
 	startCell := r.URL.Query().Get("startCell")
 	endCell := r.URL.Query().Get("endCell")
 	sheetName := r.URL.Query().Get("sheetName")
 
-	// Parse classroomID to int
+	// Parse classroomID and teacherID to int
 	classroomIDInt, err := strconv.Atoi(classroomID)
 	if err != nil {
 		http.Error(w, "Invalid classroom ID", http.StatusBadRequest)
+		return
+	}
+
+	teacherIDInt, err := strconv.Atoi(teacherID)
+	if err != nil {
+		http.Error(w, "Invalid teacher ID", http.StatusBadRequest)
 		return
 	}
 
@@ -186,7 +219,7 @@ func UploadStudentsFromExcel(w http.ResponseWriter, r *http.Request) {
 	// Insert students into the database
 	for _, student := range students {
 		student.ClassroomID = classroomIDInt
-		err := database.InsertStudent(&student)
+		err := database.InsertStudent(&student, teacherIDInt)
 		if err != nil {
 			http.Error(w, "Error inserting student into database", http.StatusInternalServerError)
 			return

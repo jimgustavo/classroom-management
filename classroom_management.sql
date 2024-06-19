@@ -65,6 +65,7 @@ CREATE TABLE grade_labels_subjects (
     CONSTRAINT fk_subject FOREIGN KEY (subject_id) REFERENCES subjects(id),
     CONSTRAINT fk_grade_label FOREIGN KEY (grade_label_id) REFERENCES grade_labels(id),
     CONSTRAINT fk_term FOREIGN KEY (term_id) REFERENCES terms(id)
+   -- CONSTRAINT unique_grade_label_subject_term UNIQUE (subject_id, grade_label_id, term_id) -- Add this constraint
 );
 
 -- Table to store the association between classroom and subjects
@@ -90,3 +91,37 @@ CREATE TABLE grades (
     FOREIGN KEY (term_id) REFERENCES terms(id),
     FOREIGN KEY (label_id) REFERENCES grade_labels(id)
 );
+
+-- classroom_management_indexes.sql
+
+-- Indexes for teachers
+CREATE UNIQUE INDEX idx_teachers_email ON teachers(email);
+
+-- Indexes for classrooms
+CREATE INDEX idx_classrooms_teacher_id ON classrooms(teacher_id);
+
+-- Indexes for students
+CREATE INDEX idx_students_classroom_id ON students(classroom_id);
+CREATE INDEX idx_students_teacher_id ON students(teacher_id);
+
+-- Indexes for subjects
+CREATE INDEX idx_subjects_teacher_id ON subjects(teacher_id);
+
+-- Indexes for grade_labels
+CREATE INDEX idx_grade_labels_teacher_id ON grade_labels(teacher_id);
+
+-- Indexes for terms
+CREATE INDEX idx_terms_teacher_id ON terms(teacher_id);
+
+-- Indexes for student_subjects
+CREATE INDEX idx_student_subjects_teacher_id ON student_subjects(teacher_id);
+
+-- Indexes for grade_labels_subjects
+CREATE INDEX idx_grade_labels_subjects_teacher_id ON grade_labels_subjects(teacher_id);
+
+-- Indexes for classroom_subjects
+CREATE INDEX idx_classroom_subjects_teacher_id ON classroom_subjects(teacher_id);
+
+-- Indexes for grades
+CREATE INDEX idx_grades_teacher_id ON grades(teacher_id);
+

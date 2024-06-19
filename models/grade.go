@@ -1,8 +1,9 @@
 package models
 
 type Grade struct {
-	LabelID int     `json:"label_id"`
-	Grade   float32 `json:"grade"`
+	LabelID   int     `json:"label_id"`
+	Grade     float32 `json:"grade"`
+	TeacherID int     `json:"teacher_id"`
 }
 
 type TermGrades struct {

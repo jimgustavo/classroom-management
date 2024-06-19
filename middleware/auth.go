@@ -16,6 +16,13 @@ type Claims struct {
 	jwt.StandardClaims
 }
 
+type ctxKey int
+
+const (
+	keyTeacherID ctxKey = iota
+	// Add other context keys here if needed
+)
+
 func Authenticate(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tokenString := r.Header.Get("Authorization")
@@ -35,7 +42,7 @@ func Authenticate(next http.Handler) http.Handler {
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), "teacherID", claims.TeacherID)
+		ctx := context.WithValue(r.Context(), keyTeacherID, claims.TeacherID)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

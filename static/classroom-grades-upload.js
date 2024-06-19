@@ -10,26 +10,28 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("classroom-title").textContent = `Grades Grid of ${classroomName} - ${term}`;
 
     try {
+        const token = localStorage.getItem("token");
+        //const teacherID = localStorage.getItem("teacher_id");
         const [studentsResponse, subjectsResponse, gradesResponse] = await Promise.all([
             fetch(`/api/classrooms/${classroomID}/students`, {
                 method: 'GET', // Add the GET method
                 headers: {
                     "Content-Type": "application/json",
-                    'Authorization': `Bearer ${localStorage.getItem("token")}` // Add your authorization token here
+                    'Authorization': `Bearer ${token}` // Add your authorization token here
                 }
             }),
             fetch(`/api/classrooms/${classroomID}/subjects`, {
                 method: 'GET', // Add the GET method
                 headers: {
                     "Content-Type": "application/json",
-                    'Authorization': `Bearer ${localStorage.getItem("token")}` // Add your authorization token here
+                    'Authorization': `Bearer ${token}` // Add your authorization token here
                 }
             }),
             fetch(`/api/classrooms/${classroomID}/grades/get?term=${encodeURIComponent(term)}`, {
                 method: 'GET', // Add the GET method
                 headers: {
                     "Content-Type": "application/json",
-                    'Authorization': `Bearer ${localStorage.getItem("token")}` // Add your authorization token here
+                    'Authorization': `Bearer ${token}` // Add your authorization token here
                 }
             })
         ]); 
@@ -38,33 +40,39 @@ document.addEventListener("DOMContentLoaded", async () => {
         //const gradesData = await gradesResponse.json();
 
         //console.log("Fetched Students:", students);
-        //console.log("Fetched Subjects:", subjects);
+        console.log("Fetched Subjects:", subjects);
         //console.log("Fetched Grades Data:", gradesData);
 
         const gradesGridContainer = document.getElementById("grades-grid-container");
 
         subjects.forEach(subject => {
             const filteredGradeLabels = subject.grade_labels.filter(label => label.term_id == termID); // Filter by termID
-            console.log(`subjectID: ${subject.id}, filteredLabels:`, filteredGradeLabels);
-            if (filteredGradeLabels.length > 0) {
+            //console.log(`subjectID: ${subject.id}, filteredLabels:`, filteredGradeLabels);
                 const subjectContainer = document.createElement('div');
                 subjectContainer.classList.add('subject-container');
 
                 const subjectTitle = document.createElement('h2');
                 subjectTitle.textContent = subject.name;
                 subjectContainer.appendChild(subjectTitle);
+                
+                if (filteredGradeLabels.length > 0) {
+                    const table = document.createElement('table');
+                    table.id = `grades-grid-${subject.id}`;
+                    table.classList.add('grades-grid');
+                    subjectContainer.appendChild(table);
+    
+                    generateGradesGrid(table, students, filteredGradeLabels);
+                } else {
+                    const noGradeLabelsMessage = document.createElement('p');
+                    noGradeLabelsMessage.textContent = "No grade labels added yet";
+                    subjectContainer.appendChild(noGradeLabelsMessage);
+                }
 
-                const table = document.createElement('table');
-                table.id = `grades-grid-${subject.id}`;
-                table.classList.add('grades-grid');
-                subjectContainer.appendChild(table);
-
-                generateGradesGrid(table, students, filteredGradeLabels);
+                //generateGradesGrid(table, students, filteredGradeLabels);
 
                 gradesGridContainer.appendChild(subjectContainer);
             }
-        });
-
+        );
         document.getElementById("upload-grades-btn").addEventListener("click", () => {
             uploadGrades(classroomID, students, subjects, term);
         });
@@ -110,7 +118,7 @@ function uploadGrades(classroomID, students, subjects, term) {
 
     subjects.forEach(subject => {
         const gradesGrid = document.getElementById(`grades-grid-${subject.id}`);
-
+        if (gradesGrid) {
         for (let i = 1; i < gradesGrid.rows.length; i++) {
             const row = gradesGrid.rows[i];
             const studentGrades = {
@@ -133,6 +141,9 @@ function uploadGrades(classroomID, students, subjects, term) {
 
             gradesData.push(studentGrades);
         }
+    } else {
+        console.error(`gradesGrid element with ID ${gradesGridID} not found`);
+    }
     });
 
     console.log("Grades Data to be uploaded:", JSON.stringify({ grades: gradesData }));
