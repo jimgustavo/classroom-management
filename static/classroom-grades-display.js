@@ -25,7 +25,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                     'Authorization': `Bearer ${localStorage.getItem("token")}` // Add your authorization token here
                 }
             }),
-            fetch(`/api/classrooms/${classroomID}/grades/get?term=${encodeURIComponent(term)}`, {
+            fetch(`/api/classrooms/${classroomID}/terms/${termID}/grades`, {
                 method: 'GET', // Add the GET method
                 headers: {
                     "Content-Type": "application/json",
@@ -38,8 +38,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         const subjects = await subjectsResponse.json();
         const gradesData = await gradesResponse.json();
 
-        console.log("Fetched Students:", students);
-        console.log("Fetched Subjects:", subjects);
+        //console.log("Fetched Students:", students);
+        //console.log("Fetched Subjects:", subjects);
         console.log("Fetched Grades Data:", gradesData);
        
         const gradesGridContainer = document.getElementById("grades-grid-container");

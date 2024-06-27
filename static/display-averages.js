@@ -23,7 +23,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                     'Authorization': `Bearer ${localStorage.getItem("token")}` 
                 }
             }),
-            fetch(`/classroom/1/averageswithfactors?bimestre1=0.8&bimestre2=0.2`, {
+            fetch(`/classroom/${classroomID}/averageswithfactors?bimestre_1=0.8&sumativa_1=0.2&bimestre_2=0.8&sumativa_2=0.2`, {
                 method: 'GET', 
                 headers: {
                     "Content-Type": "application/json",
@@ -126,7 +126,7 @@ function generateGradesGrid(gridElement, students, averagesData, subjectID) {
 
         // Calculate and add final average
         const finalAverageCell = row.insertCell();
-        const finalAverage = termCount > 0 ? (totalAverage).toFixed(2) : '0.00';
+        const finalAverage = termCount > 0 ? (totalAverage/2).toFixed(2) : '0.00';
         finalAverageCell.textContent = finalAverage;
     });
 }

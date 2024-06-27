@@ -4,10 +4,12 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/mux"
 	"github.com/jimgustavo/classroom-management/database"
 	"github.com/jimgustavo/classroom-management/middleware"
+	"github.com/jimgustavo/classroom-management/models"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -118,4 +120,131 @@ func DeleteTeacherHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
+}
+
+// ////////////////////TEACHER DATA////////////////////
+// CreateOrUpdateTeacherDataHandler handles creating or updating TeacherData
+func CreateOrUpdateTeacherDataHandler(w http.ResponseWriter, r *http.Request) {
+	var teacherData models.TeacherData
+	err := json.NewDecoder(r.Body).Decode(&teacherData)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	id, err := database.CreateTeacherData(database.GetDB(), teacherData)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	teacherData.ID = id
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(teacherData)
+}
+
+// GetAllTeacherDataHandler handles retrieving all TeacherData
+func GetAllTeacherDataHandler(w http.ResponseWriter, r *http.Request) {
+	teacherDataList, err := database.GetAllTeacherData(database.GetDB())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(teacherDataList)
+}
+
+// GetTeacherDataByIDHandler handles retrieving a single TeacherData by ID
+func GetTeacherDataByIDHandler(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	id, err := strconv.Atoi(params["id"])
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	teacherData, err := database.GetTeacherDataByID(database.GetDB(), id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(teacherData)
+}
+
+// GetTeacherDataByTeacherIDHandler handles the retrieval of teacher data by teacher ID
+func GetTeacherDataByTeacherIDHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	teacherIDStr, ok := vars["teacherID"]
+	if !ok {
+		http.Error(w, "Missing teacherID parameter", http.StatusBadRequest)
+		return
+	}
+
+	teacherID, err := strconv.Atoi(teacherIDStr)
+	if err != nil {
+		http.Error(w, "Invalid teacherID parameter", http.StatusBadRequest)
+		return
+	}
+
+	teacherData, err := database.GetTeacherDataByTeacherID(teacherID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if teacherData == nil {
+		http.Error(w, "Teacher data not found", http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(teacherData)
+}
+
+// UpdateTeacherDataHandler handles updating an existing TeacherData
+func UpdateTeacherDataHandler(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	id, err := strconv.Atoi(params["id"])
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	var teacherData models.TeacherData
+	err = json.NewDecoder(r.Body).Decode(&teacherData)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	teacherData.ID = id
+	err = database.UpdateTeacherData(database.GetDB(), teacherData)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(teacherData)
+}
+
+// DeleteTeacherDataHandler handles deleting an existing TeacherData
+func DeleteTeacherDataHandler(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	id, err := strconv.Atoi(params["id"])
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	err = database.DeleteTeacherData(database.GetDB(), id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }

@@ -45,7 +45,25 @@ func main() {
 	router.HandleFunc("/subjects/{subjectID}/terms/{termID}/grade-labels", handlers.GetGradeLabelsForSubject).Methods("GET")
 	router.HandleFunc("/classrooms/{classroomID}/averages", handlers.GetAverageGradesByClassroomID).Methods("GET")
 	router.HandleFunc("/classroom/{classroomID}/averageswithfactors", handlers.GetAveragesWithFactorsByClassroomID).Methods("GET")
-	router.HandleFunc("/classrooms/{classroomID}/terms/{termID}/grades/report", handlers.GenerateTeacherGradesReport).Methods("GET")
+	router.HandleFunc("/classrooms/{classroomID}/grades/get", handlers.GetGradesByClassroomID).Methods("GET")
+	router.HandleFunc("/classrooms/{classroomID}/terms/{termID}/grades", handlers.GetGradesByClassroomIDAndTermID).Methods("GET")
+	router.HandleFunc("/grade-labels/teacher/{teacherID}", handlers.GetGradeLabelsByTeacherID).Methods("GET")
+	router.HandleFunc("/subjects/{subjectID}/terms/{termID}/grade-labels", handlers.GetGradeLabelsForSubject).Methods("GET")
+
+	// XLSX REPORTS
+	router.HandleFunc("/xlsx-report/teachers/{teacherID}/classrooms/{classroomID}/terms/{termID}", handlers.GenerateTeacherGradesReport).Methods("GET")
+	router.HandleFunc("/xlsx-average/classroom/{classroomID}", handlers.GenerateAveragesExcelReport).Methods("GET")
+
+	// PDF REPORT
+	router.HandleFunc("/pdfminute/teacher/{teacherID}/classroom/{classroomID}/student/{studentID}", handlers.GenerateReportHandler).Methods("GET")
+
+	// TeacherData routes
+	router.HandleFunc("/teacherdata", handlers.CreateOrUpdateTeacherDataHandler).Methods("POST")
+	router.HandleFunc("/teacherdata", handlers.GetAllTeacherDataHandler).Methods("GET")
+	router.HandleFunc("/teacherdata/{teacherID}", handlers.GetTeacherDataByTeacherIDHandler).Methods("GET")
+	router.HandleFunc("/teacherdata/{id}", handlers.GetTeacherDataByIDHandler).Methods("GET")
+	router.HandleFunc("/teacherdata/{id}", handlers.UpdateTeacherDataHandler).Methods("PUT")
+	router.HandleFunc("/teacherdata/{id}", handlers.DeleteTeacherDataHandler).Methods("DELETE")
 
 	// Protected routes
 	apiRouter := router.PathPrefix("/api").Subrouter()
@@ -79,7 +97,6 @@ func main() {
 
 	// Subject routes
 	apiRouter.HandleFunc("/subjects/teacher/{teacherID}", handlers.GetSubjectsByTeacherID).Methods("GET")
-	apiRouter.HandleFunc("/subjects/{id}", handlers.GetSubject).Methods("GET")
 	apiRouter.HandleFunc("/subjects/{subjectID}/students", handlers.GetStudentsBySubjectID).Methods("GET")
 	apiRouter.HandleFunc("/subjects/{subjectID}/terms", handlers.GetTermsBySubjectID).Methods("GET")
 	apiRouter.HandleFunc("/subjects/{subjectID}/terms/{termID}/grade-labels", handlers.GetGradeLabelsForSubject).Methods("GET")
@@ -92,23 +109,14 @@ func main() {
 	// Grade Labels routes
 	apiRouter.HandleFunc("/grade-labels/teacher/{teacherID}", handlers.GetGradeLabelsByTeacherID).Methods("GET")
 	apiRouter.HandleFunc("/grade-labels", handlers.CreateGradeLabel).Methods("POST")
-	apiRouter.HandleFunc("/grade-labels/{id}", handlers.GetGradeLabel).Methods("GET")
 	apiRouter.HandleFunc("/grade-labels/{id}", handlers.UpdateGradeLabel).Methods("PUT")
 	apiRouter.HandleFunc("/grade-labels/{id}", handlers.DeleteGradeLabel).Methods("DELETE")
 
 	// Term routes
 	apiRouter.HandleFunc("/terms/teacher/{teacherID}", handlers.GetTermsByTeacherID).Methods("GET")
-	apiRouter.HandleFunc("/terms/{id}", handlers.GetTerm).Methods("GET")
 	apiRouter.HandleFunc("/terms", handlers.CreateTerm).Methods("POST")
 	apiRouter.HandleFunc("/terms/{id}", handlers.UpdateTerm).Methods("PUT")
 	apiRouter.HandleFunc("/terms/{id}", handlers.DeleteTerm).Methods("DELETE")
-
-	// Reports routes
-	apiRouter.HandleFunc("/classrooms/{classroomID}/terms/{termID}/grades/report", handlers.GenerateTeacherGradesReport).Methods("GET")
-
-	/* NOT USED FOR NOW
-
-	 */
 
 	// Serve static files from the "static" directory
 	router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
@@ -120,6 +128,13 @@ func main() {
 }
 
 /*
+
+	ROUTES NOT USED FOR NOW:
+	apiRouter.HandleFunc("/subjects/{id}", handlers.GetSubject).Methods("GET")
+	apiRouter.HandleFunc("/grade-labels/{id}", handlers.GetGradeLabel).Methods("GET")
+	apiRouter.HandleFunc("/terms/{id}", handlers.GetTerm).Methods("GET")
+
+
 ///////////Postgres Database//////////
 psql
 
@@ -237,4 +252,29 @@ curl -X POST "http://localhost:8080/classrooms/4/upload-students?startCell=B7&en
 curl -X DELETE http://localhost:8080/teachers/1
 
 curl -X POST http://localhost:8080/classrooms/1/subject/2
+
+Teacher Data:
+
+curl -X POST http://localhost:8080/teacherdata \
+-H "Content-Type: application/json" \
+-d '{
+    "school": "Sample School",
+    "school_year": "2023-2024",
+    "school_hours": "8:00 AM - 3:00 PM",
+    "country": "Ecuador",
+    "city": "Zamora",
+    "teacher_id": 1,
+    "teacher_full_name": "John Doe",
+	"teacher_birthday": "1987-10-17",
+    "id_number": "123456789",
+    "labor_dependency_relationship": "Sample Relationship",
+	"institutional_email": "jimmy.ruiz@educacion.gob.ec",
+	"phone": "0961763152",
+    "principal": "Principal Name",
+    "vice_principal": "Vice Principal Name",
+    "dece": "DECE Name",
+    "inspector": "Inspector Name"
+}'
+
+
 */

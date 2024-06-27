@@ -102,11 +102,20 @@ func UpdateGradeLabel(gradeLabel *models.GradeLabel) error {
 	return nil
 }
 
-// DeleteGradeLabel deletes a grade label from the database by its ID
 func DeleteGradeLabel(id string) error {
-	query := "DELETE FROM grade_labels WHERE id = $1"
-	_, err := db.Exec(query, id)
+	// Delete associated grades first
+	gradeDeleteQuery := "DELETE FROM grades WHERE label_id = $1"
+	_, err := db.Exec(gradeDeleteQuery, id)
 	if err != nil {
+		log.Printf("Error deleting grades associated with grade label id %s: %v", id, err)
+		return err
+	}
+
+	// Delete the grade label
+	labelDeleteQuery := "DELETE FROM grade_labels WHERE id = $1"
+	_, err = db.Exec(labelDeleteQuery, id)
+	if err != nil {
+		log.Printf("Error deleting grade label with id %s: %v", id, err)
 		return err
 	}
 	return nil
@@ -126,7 +135,11 @@ func GetGradeLabelsForSubject(subjectID int, termID int) ([]models.GradeLabel, e
 	log.Printf("Attempting to add subject %d to classroom %d", subjectID, termID)
 	var gradeLabels []models.GradeLabel
 
-	rows, err := db.Query("SELECT id, label FROM grade_labels WHERE id IN (SELECT grade_label_id FROM grade_labels_subjects WHERE subject_id = $1 AND term_id = $2)", subjectID, termID)
+	rows, err := db.Query(`
+		SELECT id, label, date, skill, teacher_id
+		FROM grade_labels
+		WHERE id IN (SELECT grade_label_id FROM grade_labels_subjects WHERE subject_id = $1 AND term_id = $2)
+	`, subjectID, termID)
 	if err != nil {
 		return nil, err
 	}
@@ -134,7 +147,8 @@ func GetGradeLabelsForSubject(subjectID int, termID int) ([]models.GradeLabel, e
 
 	for rows.Next() {
 		var gradeLabel models.GradeLabel
-		if err := rows.Scan(&gradeLabel.ID, &gradeLabel.Label); err != nil {
+		if err := rows.Scan(&gradeLabel.ID, &gradeLabel.Label, &gradeLabel.Date,
+			&gradeLabel.Skill, &gradeLabel.TeacherID); err != nil {
 			return nil, err
 		}
 		gradeLabels = append(gradeLabels, gradeLabel)

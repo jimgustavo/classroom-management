@@ -1,0 +1,40 @@
+ <!-- static/reports.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Reports</title>
+    <link rel="stylesheet" href="reports.css">
+</head>
+<body>
+    <h1>Reports</h1>
+    <section id="reporte-de-calificaciones">
+        <h2>Reporte de Calificaciones</h2>
+        <!-- Additional content for this section -->
+    </section>
+    <section id="actas-de-compromiso">
+        <h2>Actas de Compromiso</h2>
+        <label for="classroom-dropdown">Select Classroom:</label>
+        <select id="classroom-dropdown">
+            <option value="">--Select Classroom--</option>
+            <!-- Options will be populated dynamically -->
+        </select>
+        <div class="dropdown-container">
+            <label for="term-dropdown">Select Term:</label>
+            <select id="term-dropdown">
+                <option value="" disabled selected>Select a term</option>
+                <!-- Term options will be populated dynamically -->
+            </select>
+        </div>
+        <div id="low-grades-container" class="section-container">
+            <!-- Students with low grades will be displayed here -->
+        </div>
+    </section>
+    <!-- Refuerzo Academico Section -->
+    <section id="refuerzo-academico">
+        <h2>Refuerzo Académico</h2>
+        <!-- Additional content for this section -->
+    </section>
+    <script src="reports.js"></script>
+</body>
+</html>

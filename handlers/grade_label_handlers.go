@@ -126,9 +126,11 @@ func UpdateGradeLabel(w http.ResponseWriter, r *http.Request) {
 func DeleteGradeLabel(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	gradeLabelID := params["id"]
+	log.Printf("Deleting grade label with id: %s", gradeLabelID)
 
 	err := database.DeleteGradeLabel(gradeLabelID)
 	if err != nil {
+		log.Printf("Error deleting grade label with id %s: %v", gradeLabelID, err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

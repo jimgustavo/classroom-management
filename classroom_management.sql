@@ -8,6 +8,28 @@ CREATE TABLE teachers (
     password VARCHAR(255) NOT NULL -- Store hashed passwords
 );
 
+-- Table to store teacher data
+CREATE TABLE teacher_data (
+    id SERIAL PRIMARY KEY,
+    school VARCHAR(255),
+    school_year VARCHAR(255),
+    school_hours VARCHAR(255),
+    country VARCHAR(255),
+    city VARCHAR(255),
+    teacher_id INT REFERENCES teachers(id) ON DELETE CASCADE,
+    teacher_full_name VARCHAR(255),
+    id_number VARCHAR(255),
+    labor_dependency_relationship VARCHAR(255),
+    principal VARCHAR(255),
+    vice_principal VARCHAR(255),
+    dece VARCHAR(255),
+    inspector VARCHAR(255),
+    institutional_email VARCHAR(255),
+    phone VARCHAR(50),
+    teacher_birthday DATE
+    CONSTRAINT unique_teacher_id UNIQUE (teacher_id) -- Add unique constraint 
+);
+
 -- Table to store classrooms
 CREATE TABLE classrooms (
     id SERIAL PRIMARY KEY,
@@ -124,4 +146,7 @@ CREATE INDEX idx_classroom_subjects_teacher_id ON classroom_subjects(teacher_id)
 
 -- Indexes for grades
 CREATE INDEX idx_grades_teacher_id ON grades(teacher_id);
+
+-- Indexes for teacher_data
+CREATE INDEX idx_teacher_data_teacher_id ON teacher_data(teacher_id);
 

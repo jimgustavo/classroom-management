@@ -1,0 +1,126 @@
+/* Base Styles */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #1a1a1a;
+    color: #eaeaea;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+}
+
+/* Container and Section Styles */
+h1, h2 {
+    font-weight: 300;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    color: #00d4ff;
+}
+
+section {
+    background-color: #222;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 20px 0;
+    width: 80%;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+h2 {
+    border-bottom: 2px solid #00d4ff;
+    padding-bottom: 10px;
+}
+
+/* Button Styles */
+button {
+    background-color: #00d4ff;
+    border: none;
+    border-radius: 4px;
+    color: #1a1a1a;
+    padding: 10px 20px;
+    margin: 10px 0;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+button:disabled {
+    background-color: #555;
+    cursor: not-allowed;
+}
+
+button:hover:enabled {
+    background-color: #009ec3;
+}
+
+/* Dropdown Styles */
+select {
+    background-color: #1a1a1a;
+    border: 2px solid #00d4ff;
+    border-radius: 4px;
+    color: #eaeaea;
+    padding: 10px;
+    width: 100%;
+    margin-bottom: 20px;
+    transition: border-color 0.3s ease;
+}
+
+select:focus {
+    border-color: #009ec3;
+    outline: none;
+}
+
+/* Student Entries and Grades Styles */
+#low-grades-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.student-entry {
+    background-color: #333;
+    border-radius: 4px;
+    padding: 15px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.grade-entry {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: #444;
+    border-radius: 4px;
+    padding: 10px;
+    margin-top: 10px;
+}
+
+.grade-entry p {
+    margin: 0;
+    color: #fff;
+}
+
+.grade-entry button {
+    margin-left: 10px;
+}
+
+/* Miscellaneous Styles */
+#classroom-dropdown {
+    max-width: 300px;
+}
+
+@media (max-width: 768px) {
+    section {
+        width: 95%;
+    }
+
+    .grade-entry {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .grade-entry button {
+        margin: 10px 0 0 0;
+    }
+}

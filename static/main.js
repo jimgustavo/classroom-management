@@ -6,6 +6,8 @@ document.addEventListener("DOMContentLoaded", () => {
     fetchSubjects();
     fetchGradeLabels();
     fetchTerms(); 
+    fetchTeacherData();
+    setTeacherNameInNavBar();    // Set the teacher's name in the navigation bar
 
     const classroomForm = document.getElementById("classroom-form");
     classroomForm.addEventListener("submit", createClassroom);
@@ -34,15 +36,52 @@ document.addEventListener("DOMContentLoaded", () => {
     const assignClassroomForm = document.getElementById("assign-classroom-form");
     assignClassroomForm.addEventListener("submit", assignSubjectToClassroom);
 
-    // Add event listeners for signup and login forms
-    const signupForm = document.getElementById("signup-form");
-    signupForm.addEventListener("submit", signupTeacher);
+    /*
+    const teacherDataForm = document.getElementById("teacherdata-form");
+    teacherDataForm.addEventListener("submit", createTeacherData);
+    */
+    const teacherDataForm = document.getElementById("teacherdata-form");
+    if (teacherDataForm) {
+        teacherDataForm.addEventListener("submit", createTeacherData);
+        console.log("Event listener for teacher data form added.");
+    } else {
+        console.log("Teacher data form not found.");
+    }
+    const formsToCheck = [
+        { id: "student-form", event: "submit", handler: createStudent },
+        { id: "upload-students-form", event: "submit", handler: uploadStudentsFromExcel },
+        { id: "teacherdata-form", event: "submit", handler: createTeacherData },
+        { id: "classroom-form", event: "submit", handler: createClassroom },
+        { id: "subject-form", event: "submit", handler: createSubject },
+        { id: "grade-label-form", event: "submit", handler: createGradeLabel },
+        { id: "term-form", event: "submit", handler: createTerm },
+        { id: "assign-grade-label-form", event: "submit", handler: assignGradeLabelToSubject },
+        { id: "assign-classroom-form", event: "submit", handler: assignSubjectToClassroom }
+    ];
 
-    const loginForm = document.getElementById("login-form");
-    loginForm.addEventListener("submit", loginTeacher);
+    formsToCheck.forEach(({ id, event, handler }) => {
+        const form = document.getElementById(id);
+        if (form) {
+            form.addEventListener(event, handler);
+            console.log(`Event listener for ${id} added.`);
+        } else {
+            console.log(`${id} not found.`);
+        }
+    });
 });
 
 ///////////////**********TEACHERS SECTION**************////////////////////////////
+
+// Function to set the teacher's name in the navigation bar
+function setTeacherNameInNavBar() {
+    const teacherName = localStorage.getItem("teacher_name");
+    if (teacherName) {
+        const teacherNavItem = document.getElementById("teacher-nav-item");
+        const teacherDataH2 = document.getElementById("teacher-data-h2");
+        teacherNavItem.querySelector("a").textContent = teacherName;
+        teacherDataH2.textContent = `${teacherName} Data`;
+    }
+}
 
 async function logout() {
     try {
@@ -55,6 +94,134 @@ async function logout() {
     } catch (error) {
         console.error("Error logging out:", error);
         alert("An error occurred during logout. Please try again later.");
+    }
+}
+
+async function fetchTeacherData() {
+    const teacherID = parseInt(localStorage.getItem("teacher_id"));
+    try {
+        const response = await fetch(`/teacherdata/${teacherID}`);
+        const teacherData = await response.json();
+        displayTeacherData(teacherData);
+        fillTeacherDataForm(teacherData);
+        // Enable the Reports button if teacherData exists
+        if (teacherData) {
+            document.getElementById("reports-btn").disabled = false;
+        }
+
+    } catch (error) {
+        console.error("Error fetching teacher data:", error);
+    }
+}
+// Add an event listener to redirect to reports.html
+document.getElementById("reports-btn").addEventListener("click", () => {
+    window.location.href = "reports.html";
+});
+
+
+function fillTeacherDataForm(teacherData) {
+    document.getElementById("teacher-school").value = teacherData.school || "";
+    document.getElementById("teacher-school-year").value = teacherData.school_year || "";
+    document.getElementById("teacher-school-hours").value = teacherData.school_hours || "";
+    document.getElementById("teacher-country").value = teacherData.country || "";
+    document.getElementById("teacher-city").value = teacherData.city || "";
+    document.getElementById("teacher-full-name").value = teacherData.teacher_full_name || "";
+    
+    const birthday = teacherData.teacher_birthday ? new Date(teacherData.teacher_birthday).toISOString().split('T')[0] : "";
+    document.getElementById("teacher-birthday").value = birthday;
+    
+    document.getElementById("teacher-id-number").value = teacherData.id_number || "";
+    document.getElementById("teacher-labor-relationship").value = teacherData.labor_dependency_relationship || "";
+    document.getElementById("institutional-email").value = teacherData.institutional_email || "";
+    document.getElementById("phone").value = teacherData.phone || "";
+    document.getElementById("teacher-principal").value = teacherData.principal || "";
+    document.getElementById("teacher-vice-principal").value = teacherData.vice_principal || "";
+    document.getElementById("teacher-dece").value = teacherData.dece || "";
+    document.getElementById("teacher-inspector").value = teacherData.inspector || "";
+}
+
+function displayTeacherData(teacherData) {
+    const teacherDataContainer = document.getElementById("teacherdata-container");
+    teacherDataContainer.innerHTML = "";
+
+    const teacherDiv = document.createElement("div");
+    teacherDiv.classList.add("teacher-data-entry");
+    teacherDiv.dataset.teacherId = teacherData.id;
+
+    const fields = [
+        `School: ${teacherData.school}`,
+        `School Year: ${teacherData.school_year}`,
+        `School Hours: ${teacherData.school_hours}`,
+        `Country: ${teacherData.country}`,
+        `City: ${teacherData.city}`,
+        `Full Name: ${teacherData.teacher_full_name}`,
+        `Birthday: ${teacherData.teacher_birthday}`,
+        `ID Number: ${teacherData.id_number}`,
+        `Labor Dependency Relationship: ${teacherData.labor_dependency_relationship}`,
+        `Institutional Email: ${teacherData.institutional_email}`,
+        `Phone: ${teacherData.phone}`,
+        `Principal: ${teacherData.principal}`,
+        `Vice Principal: ${teacherData.vice_principal}`,
+        `DECE: ${teacherData.dece}`,
+        `Inspector: ${teacherData.inspector}`
+    ];
+
+    fields.forEach(field => {
+        const p = document.createElement("p");
+        p.textContent = field;
+        teacherDiv.appendChild(p);
+    });
+    teacherDataContainer.appendChild(teacherDiv);
+}
+
+async function createTeacherData(event) {
+    event.preventDefault();
+
+    const teacherID = localStorage.getItem("teacher_id");
+
+    const teacherData = {
+        school: document.getElementById("teacher-school").value,
+        school_year: document.getElementById("teacher-school-year").value,
+        school_hours: document.getElementById("teacher-school-hours").value,
+        country: document.getElementById("teacher-country").value,
+        city: document.getElementById("teacher-city").value,
+        teacher_id: parseInt(teacherID),
+        teacher_full_name: document.getElementById("teacher-full-name").value,
+        teacher_birthday: document.getElementById("teacher-birthday").value,
+        id_number: document.getElementById("teacher-id-number").value,
+        labor_dependency_relationship: document.getElementById("teacher-labor-relationship").value,
+        institutional_email: document.getElementById("institutional-email").value,
+        phone: document.getElementById("phone").value,
+        principal: document.getElementById("teacher-principal").value,
+        vice_principal: document.getElementById("teacher-vice-principal").value,
+        dece: document.getElementById("teacher-dece").value,
+        inspector: document.getElementById("teacher-inspector").value
+    };
+
+    console.log("Submitting teacher data:", teacherData);
+
+    try {
+        const response = await fetch("/teacherdata", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(teacherData)
+        });
+
+        if (response.ok) {
+            const result = await response.json();
+            console.log("Teacher data created successfully:", result);
+            alert("Teacher data created successfully!");
+            fetchTeacherData(); // Refresh the displayed data
+        } else {
+            const errorText = await response.text();
+            console.error("Error creating teacher data:", errorText);
+            alert("Error creating teacher data: " + errorText);
+        }
+    } catch (error) {
+        console.error("Error creating teacher data:", error);
+        alert("An error occurred while creating teacher data. Please try again later.");
     }
 }
 
@@ -1016,6 +1183,9 @@ async function createTerm(event) {
     const token = localStorage.getItem("token");
     const teacherID = parseInt(localStorage.getItem("teacher_id"));
 
+    // Replace spaces with underscores in the term name
+    const sanitizedTermName = termName.replace(/\s+/g, "_");
+
     try {
         const response = await fetch("/api/terms", {
             method: "POST",
@@ -1023,7 +1193,7 @@ async function createTerm(event) {
                 "Content-Type": "application/json",
                 "Authorization": `Bearer ${token}`
             },
-            body: JSON.stringify({ name: termName, teacher_id: teacherID })
+            body: JSON.stringify({ name: sanitizedTermName, teacher_id: teacherID })
         });
         if (response.ok) {
             alert("Term created successfully!");
