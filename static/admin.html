@@ -1,0 +1,142 @@
+<!-- static/admin.html -->
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LICEN ADMINISTRATOR</title>
+    <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>LICEN ADMINISTRATOR</h1>
+            <nav>
+                <ul>
+                    <li><a href="#classrooms">Classrooms</a></li>
+                    <li><a href="#teachers">Teachers</a></li>
+                    <li><a href="#academicPeriods">A.Periods</a></li>
+                    <li><a href="#terms">Terms</a></li>
+                    <li id="teacher-nav-item"><a href="#teacherdata">Teacher</a></li>
+                    <li><button id="logout-btn">Logout</button></li>
+                </ul>
+            </nav>
+            <div id="profile-info" style="display: none;"></div>
+        </header>
+        <main>
+            
+            <section id="hero">
+                 <div class="background-image"></div> 
+                <div class="overlay"></div>
+                <div class="hero-content">
+            </section>
+                             
+            <section id="teachers">
+                <h2>Teachers</h2>      
+                <div class="section-container">
+                    <ul id="teachers-list">
+                        <!-- Teachers will be dynamically added here -->
+                    </ul>
+                </div>
+                <div class="section-container-inputs">
+                    <!-- Search bar for filtering teachers -->
+                    <input type="text" id="teacher-search-bar" placeholder="Search for a teacher by name or ID or email">
+
+                    <!-- Dropdown for selecting a role -->
+                    <select id="role-dropdown">
+                        <option value="teacher">Teacher</option>
+                        <option value="proteacher">ProTeacher</option>
+                    </select>
+
+                    <!-- Button to assign role -->
+                    <button id="assign-role-btn">Assign Role</button>
+                </div>
+            </section>
+
+            <section id="classrooms">
+                <h2>Classrooms</h2>      
+                    <div id="classroom-container" class="classroom-container">
+                        <!-- Classrooms cards will be dynamically added here -->
+                    </div>
+            </section>
+
+
+            <section id="academicPeriods">
+                <h2>Academic Periods</h2>
+                <div id="academicPeriods-container" class="section-container">
+                    <!-- Academic Periods cards will be dynamically added here -->
+                </div>
+                <div class="section-container-inputs">
+                    <form id="academicPeriod-form" action="#" method="post">
+                        <label for="academicPeriod-name">Academic Period Name:</label>
+                        <input type="text" id="academicPeriod-name" name="academicPeriod-name" required>
+                        <button type="submit">Create Academic Period</button>
+                    </form>
+                </div>
+                <h2>Assign Term to Academic Period</h2>
+                <div class="section-container-inputs">
+                    <form id="assignTerm-form">
+                        <label for="academicPeriod-select">Select Academic Period:</label>
+                        <select id="academicPeriod-select" name="academicPeriod-select" required></select>
+                        
+                        <label for="term-select">Select Term:</label>
+                        <select id="term-select" name="term-select" required></select>
+                        
+                        <button type="submit">Assign Term</button>
+                    </form>
+                </div>
+            </section>
+            
+            <section id="assignTerm">
+               
+            </section>
+            
+            
+               
+            <section id="terms">
+                <h2>Terms</h2>
+                <div class="section-container">
+                    <ul id="term-list">
+                        <!-- Terms will be dynamically added here -->
+                    </ul>
+                </div>
+                <div class="section-container-inputs">
+                    <form id="term-form" action="#" method="post">
+                        <label for="term-name">Term Name:</label>
+                        <input type="text" id="term-name" name="term-name" required>
+                        <button type="submit">Submit Term</button>
+                    </form>
+                </div>
+            </section>
+            <!-- TeacherData Section -->
+        <section id="teacherdata">
+        <h2 id="teacher-data-h2">Teacher Data</h2>
+            <div id="teacherdata-container" class="section-container">
+                <!-- TeacherData entries will be dynamically added here -->
+            </div>
+    </section>
+             <!-- Modal Structure -->
+            <div id="modal" class="modal">
+                <div class="modal-content">
+                    <span id="close-modal" class="close">&times;</span>
+                    <div id="modal-body"></div>
+                </div>
+            </div>
+            <!-- Modal Structure -->
+            <div id="termsModal" class="modal">
+                <div class="modal-content">
+                    <span id="close-terms-modal" class="close">&times;</span>
+                    <h3>Terms in Academic Period</h3>
+                    <div id="terms-modal-body"></div>
+                </div>
+            </div>
+
+        </main>
+        <footer>
+            <p>&copy; 2024 TaviTo services. All rights reserved.</p>
+        </footer>
+    </div>
+    <script src="admin.js"></script>
+</body>
+</html>

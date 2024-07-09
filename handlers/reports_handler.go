@@ -15,6 +15,548 @@ import (
 	"github.com/xuri/excelize/v2"
 )
 
+// ////////////////////////////XLSX AVERAGE REPORT///////////////////////////
+func GenerateFinalAveragesReport(w http.ResponseWriter, r *http.Request) {
+	// Extract the classroom ID and academic period ID from the URL path
+	vars := mux.Vars(r)
+	classroomIDStr := vars["classroomID"]
+	academicPeriodIDStr := vars["academicPeriodID"]
+	teacherIDStr := vars["teacherID"]
+
+	// Convert classroomID and academicPeriodID to integers
+	classroomID, err := strconv.Atoi(classroomIDStr)
+	if err != nil {
+		http.Error(w, "Invalid classroom ID", http.StatusBadRequest)
+		return
+	}
+
+	academicPeriodID, err := strconv.Atoi(academicPeriodIDStr)
+	if err != nil {
+		http.Error(w, "Invalid academic period ID", http.StatusBadRequest)
+		return
+	}
+
+	teacherID, err := strconv.Atoi(teacherIDStr)
+	if err != nil {
+		http.Error(w, "Invalid teacher ID", http.StatusBadRequest)
+		return
+	}
+
+	// Fetch students, subjects, and averages with reinforcement grades
+	classroom, err := database.GetClassroomByID(classroomID)
+	if err != nil {
+		http.Error(w, "Error fetching the classroom", http.StatusInternalServerError)
+		log.Printf("Error fetching the classroom: %v\n", err)
+		return
+	}
+
+	students, err := database.GetStudentsByClassroomID(classroomID)
+	if err != nil {
+		http.Error(w, "Error fetching students", http.StatusInternalServerError)
+		log.Printf("Error fetching students: %v\n", err)
+		return
+	}
+
+	subjects, err := database.GetSubjectsInClassroom(classroomID)
+	if err != nil {
+		http.Error(w, "Error fetching subjects", http.StatusInternalServerError)
+		log.Printf("Error fetching subjects: %v\n", err)
+		return
+	}
+
+	// Hardcoded term factors
+	termFactors := []models.TermFactor{
+		{Term: "bimestre_1", Factor: 0.8},
+		{Term: "sumativa_1", Factor: 0.2},
+		{Term: "bimestre_2", Factor: 0.8},
+		{Term: "sumativa_2", Factor: 0.2},
+	}
+
+	averagesData, err := database.FetchAveragesWithReinforcementByClassroomID(classroomID, termFactors)
+	if err != nil {
+		http.Error(w, "Error fetching averages", http.StatusInternalServerError)
+		log.Printf("Error fetching averages: %v\n", err)
+		return
+	}
+
+	teacherData, err := database.GetTeacherDataByTeacherID(teacherID)
+	if err != nil {
+		http.Error(w, "Error fetching teacher data", http.StatusInternalServerError)
+		log.Printf("Error fetching teacher data: %v\n", err)
+		return
+	}
+
+	terms, err := database.FetchTermsByAcademicPeriodFromDB(academicPeriodID)
+	if err != nil {
+		http.Error(w, "Error fetching terms", http.StatusInternalServerError)
+		log.Printf("Error fetching terms: %v\n", err)
+		return
+	}
+
+	file := excelize.NewFile()
+
+	for _, subject := range subjects {
+		sheetName := subject.Name
+		file.NewSheet(sheetName)
+
+		currentTime := time.Now()
+		truncatedTime := currentTime.Truncate(time.Second)
+
+		headerSheetStyle, err := file.NewStyle(&excelize.Style{
+			Alignment: &excelize.Alignment{
+				Horizontal: "center",
+			},
+			Font: &excelize.Font{
+				Bold: true,
+			},
+		})
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		headerStyle, err := file.NewStyle(&excelize.Style{
+			Alignment: &excelize.Alignment{
+				Vertical:     "center",
+				ShrinkToFit:  true,
+				TextRotation: 90,
+			},
+			Font: &excelize.Font{
+				Bold: true,
+			},
+		})
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		otherHeaderStyle, err := file.NewStyle(&excelize.Style{
+			Alignment: &excelize.Alignment{
+				Vertical:    "center",
+				ShrinkToFit: false,
+			},
+			Font: &excelize.Font{
+				Bold: true,
+			},
+		})
+
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		file.SetCellValue(subject.Name, "B1", teacherData.School)
+		file.SetCellStyle(sheetName, "B1", "B1", headerSheetStyle)
+		file.SetCellValue(subject.Name, "B2", teacherData.Country+" - "+teacherData.City)
+		file.SetCellStyle(sheetName, "B2", "B2", headerSheetStyle)
+		file.SetCellValue(subject.Name, "B3", "Teacher: "+teacherData.TeacherFullName)
+		file.SetCellValue(subject.Name, "B4", "Classroom: "+classroom.Name)
+		file.SetCellValue(subject.Name, "D3", "Subject: "+subject.Name)
+		file.SetCellValue(subject.Name, "J3", "School Year: "+teacherData.SchoolYear)
+		file.SetCellValue(subject.Name, "D4", "Report Date: "+truncatedTime.Format("2006-01-02 15:04:05"))
+		file.SetCellValue(subject.Name, "J4", "School Hours: "+teacherData.SchoolHours)
+
+		mergeCellRanges := [][]string{{"B1", "O1"}, {"B2", "O2"}, {"D3", "I3"}, {"J3", "O3"}, {"D4", "I4"}, {"J4", "O4"}}
+		for _, ranges := range mergeCellRanges {
+			if err := file.MergeCell(sheetName, ranges[0], ranges[1]); err != nil {
+				fmt.Println(err)
+				return
+			}
+		}
+
+		headers := []string{"Number", "Student Name"}
+		for _, term := range terms {
+			headers = append(headers, term.Name)
+			headers = append(headers, "%")
+		}
+		headers = append(headers, "Final Average", "Includes Reinforcement")
+
+		for i, header := range headers {
+			cell := string(rune('A'+i)) + "6"
+			if header == "Student Name" {
+				file.SetCellValue(sheetName, cell, header)
+				file.SetCellStyle(sheetName, cell, cell, otherHeaderStyle)
+			} else {
+				file.SetCellValue(sheetName, cell, header)
+				file.SetCellStyle(sheetName, cell, cell, headerStyle)
+			}
+		}
+
+		_ = file.SetColWidth(subject.Name, "A", "A", 3)
+		_ = file.SetColWidth(subject.Name, "B", "B", 37)
+		_ = file.SetColWidth(subject.Name, "C", "N", 5)
+		_ = file.SetRowHeight(subject.Name, 6, 60)
+
+		for i, student := range students {
+			rowNum := i + 7
+			file.SetCellValue(sheetName, "A"+strconv.Itoa(rowNum), i+1)
+			file.SetCellValue(sheetName, "B"+strconv.Itoa(rowNum), student.Name)
+
+			totalAverage := 0.0
+			termCount := 0
+			includesReinforcement := false
+
+			for j, term := range terms {
+				cellTerm := string(rune('C'+2*j)) + strconv.Itoa(rowNum)
+				cellFactor := string(rune('D'+2*j)) + strconv.Itoa(rowNum)
+				averageData := getAverageForStudent(averagesData, student.ID, subject.ID, term.Name)
+				if averageData != nil {
+					file.SetCellValue(sheetName, cellTerm, averageData.Average)
+					file.SetCellValue(sheetName, cellFactor, averageData.AveFactor)
+					totalAverage += float64(averageData.AveFactor)
+					termCount++
+					if averageData.Label == "includes_reinforcement" {
+						includesReinforcement = true
+					}
+				} else {
+					file.SetCellValue(sheetName, cellTerm, "N/A")
+					file.SetCellValue(sheetName, cellFactor, "N/A")
+				}
+			}
+
+			finalAverageCell := string(rune('C'+2*len(terms))) + strconv.Itoa(rowNum)
+			includesReinforcementCell := string(rune('D'+2*len(terms))) + strconv.Itoa(rowNum)
+			if termCount > 0 {
+				file.SetCellValue(sheetName, finalAverageCell, fmt.Sprintf("%.2f", totalAverage/float64(termCount)))
+			} else {
+				file.SetCellValue(sheetName, finalAverageCell, "N/A")
+			}
+			file.SetCellValue(sheetName, includesReinforcementCell, includesReinforcement)
+		}
+	}
+
+	file.DeleteSheet("Sheet1")
+
+	w.Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+	w.Header().Set("Content-Disposition", `attachment; filename="final_averages_report.xlsx"`)
+	if err := file.Write(w); err != nil {
+		http.Error(w, "Error generating report", http.StatusInternalServerError)
+		log.Printf("Error generating report: %v\n", err)
+	}
+}
+
+func getAverageForStudent(averagesData models.AveragesDataFactor, studentID, subjectID int, termName string) *models.TermAverageFactor {
+	for _, studentAverage := range averagesData.Averages {
+		if studentAverage.StudentID == studentID && studentAverage.SubjectID == subjectID {
+			for _, termAverage := range studentAverage.Averages {
+				if termAverage.Term == termName {
+					return &termAverage
+				}
+			}
+		}
+	}
+	return nil
+}
+
+///////////////////////////////XLSX TEACHER REPORT///////////////////////
+
+// Handler function to generate the teacher_grades.xlsx report
+func GenerateTeacherGradesReport(w http.ResponseWriter, r *http.Request) {
+	// Extract the classroom ID, term ID, and teacher ID from the URL path
+	vars := mux.Vars(r)
+	classroomIDStr := vars["classroomID"]
+	termIDStr := vars["termID"]
+	teacherIDStr := vars["teacherID"]
+	academicPeriodIDStr := vars["academicPeriodID"]
+
+	// Convert classroomID, termID, and teacherID to integers
+	classroomID, err := strconv.Atoi(classroomIDStr)
+	if err != nil {
+		http.Error(w, "Invalid classroom ID", http.StatusBadRequest)
+		return
+	}
+
+	termID, err := strconv.Atoi(termIDStr)
+	if err != nil {
+		http.Error(w, "Invalid term ID", http.StatusBadRequest)
+		return
+	}
+
+	teacherID, err := strconv.Atoi(teacherIDStr)
+	if err != nil {
+		http.Error(w, "Invalid teacher ID", http.StatusBadRequest)
+		return
+	}
+
+	academicPeriodID, err := strconv.Atoi(academicPeriodIDStr)
+	if err != nil {
+		http.Error(w, "Invalid Academic Period ID", http.StatusBadRequest)
+		return
+	}
+
+	// Fetch students, subjects, and grades for the classroom and term
+	classroom, err := database.GetClassroomByID(classroomID)
+	if err != nil {
+		http.Error(w, "Error fetching the classroom", http.StatusInternalServerError)
+		log.Printf("Error fetching the classroom: %v\n", err)
+		return
+	}
+
+	students, err := database.GetStudentsByClassroomID(classroomID)
+	if err != nil {
+		http.Error(w, "Error fetching students", http.StatusInternalServerError)
+		log.Printf("Error fetching students: %v\n", err)
+		return
+	}
+
+	subjects, err := database.GetSubjectsInClassroom(classroomID)
+	if err != nil {
+		http.Error(w, "Error fetching subjects", http.StatusInternalServerError)
+		log.Printf("Error fetching subjects: %v\n", err)
+		return
+	}
+
+	gradesData, err := database.FetchGradesByClassroomIDAndTermID(classroomID, termID)
+	if err != nil {
+		http.Error(w, "Error fetching grades", http.StatusInternalServerError)
+		log.Printf("Error fetching grades: %v\n", err)
+		return
+	}
+
+	reinforcementGrades, err := database.GetReinforcementGradeLabelsByClassroomAndTerm(classroomID, termID)
+	if err != nil {
+		http.Error(w, "Error fetching reinforcement grades", http.StatusInternalServerError)
+		log.Printf("Error fetching reinforcement grades: %v\n", err)
+		return
+	}
+
+	teacherData, err := database.GetTeacherDataByTeacherID(teacherID)
+	if err != nil {
+		http.Error(w, "Error fetching teacher data", http.StatusInternalServerError)
+		log.Printf("Error fetching teacher data: %v\n", err)
+		return
+	}
+
+	terms, err := database.FetchTermsByAcademicPeriodFromDB(academicPeriodID)
+	if err != nil {
+		http.Error(w, "Error fetching terms", http.StatusInternalServerError)
+		log.Printf("Error fetching terms: %v\n", err)
+		return
+	}
+
+	var termName string
+	validTermID := false
+	for _, term := range terms {
+		if term.ID == termID {
+			validTermID = true
+			termName = term.Name
+			break
+		}
+	}
+
+	if !validTermID {
+		http.Error(w, "Invalid term ID", http.StatusBadRequest)
+		log.Printf("Invalid term ID: %d\n", termID)
+		return
+	}
+
+	file := excelize.NewFile()
+
+	for _, subject := range subjects {
+		sheetName := subject.Name
+		file.NewSheet(sheetName)
+
+		gradeLabels, err := database.GetGradeLabelsForSubject(subject.ID, termID)
+		if err != nil {
+			http.Error(w, "Error fetching grade labels", http.StatusInternalServerError)
+			log.Printf("Error fetching grade labels for subject %d: %v\n", subject.ID, err)
+			return
+		}
+
+		currentTime := time.Now()
+		truncatedTime := currentTime.Truncate(time.Second)
+
+		headerSheetStyle, err := file.NewStyle(&excelize.Style{
+			Alignment: &excelize.Alignment{
+				Horizontal: "center",
+			},
+			Font: &excelize.Font{
+				Bold: true,
+			},
+		})
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		headerStyle, err := file.NewStyle(&excelize.Style{
+			Alignment: &excelize.Alignment{
+				Vertical:     "center",
+				ShrinkToFit:  true,
+				TextRotation: 90,
+			},
+			Font: &excelize.Font{
+				Bold: true,
+			},
+		})
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		otherHeaderStyle, err := file.NewStyle(&excelize.Style{
+			Alignment: &excelize.Alignment{
+				Vertical:    "center",
+				ShrinkToFit: false,
+			},
+			Font: &excelize.Font{
+				Bold: true,
+			},
+		})
+
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		file.SetCellValue(subject.Name, "B1", teacherData.School)
+		file.SetCellStyle(sheetName, "B1", "B1", headerSheetStyle)
+		file.SetCellValue(subject.Name, "B2", teacherData.Country+" - "+teacherData.City)
+		file.SetCellStyle(sheetName, "B2", "B2", headerSheetStyle)
+		file.SetCellValue(subject.Name, "B3", "Teacher: "+teacherData.TeacherFullName)
+		file.SetCellValue(subject.Name, "B4", "Classroom: "+classroom.Name)
+		file.SetCellValue(subject.Name, "D3", "Subject: "+subject.Name)
+		file.SetCellValue(subject.Name, "J3", "School Year: "+teacherData.SchoolYear)
+		file.SetCellValue(subject.Name, "D4", "Report Date: "+truncatedTime.Format("2006-01-02 15:04:05"))
+		file.SetCellValue(subject.Name, "J4", "School Hours: "+teacherData.SchoolHours)
+		file.SetCellValue(subject.Name, "C5", termName)
+		file.SetCellStyle(sheetName, "C5", "C5", headerSheetStyle)
+
+		mergeCellRanges := [][]string{{"B1", "O1"}, {"B2", "O2"}, {"C5", "O5"}, {"D3", "I3"}, {"J3", "O3"}, {"D4", "I4"}, {"J4", "O4"}}
+		for _, ranges := range mergeCellRanges {
+			if err := file.MergeCell(sheetName, ranges[0], ranges[1]); err != nil {
+				fmt.Println(err)
+				return
+			}
+		}
+
+		headers := []string{"Number", "Student Name"}
+		labelIDToName := make(map[int]string)
+
+		for _, label := range gradeLabels {
+			headers = append(headers, label.Label)
+			labelIDToName[label.ID] = label.Label
+		}
+
+		reinforcementLabels := []string{}
+		for _, rg := range reinforcementGrades {
+			if rg.SubjectID == subject.ID {
+				reinforcementLabels = append(reinforcementLabels, rg.Label)
+			}
+		}
+		reinforcementLabels = unique(reinforcementLabels)
+		headers = append(headers, reinforcementLabels...)
+		headers = append(headers, fmt.Sprintf("%s-average", termName))
+
+		for i, header := range headers {
+			cell := string(rune('A'+i)) + "6"
+			if header == "Student Name" {
+				file.SetCellValue(sheetName, cell, header)
+				file.SetCellStyle(sheetName, cell, cell, otherHeaderStyle)
+			} else {
+				file.SetCellValue(sheetName, cell, header)
+				file.SetCellStyle(sheetName, cell, cell, headerStyle)
+			}
+		}
+
+		_ = file.SetColWidth(subject.Name, "A", "A", 3)
+		_ = file.SetColWidth(subject.Name, "B", "B", 37)
+		_ = file.SetColWidth(subject.Name, "C", "N", 5)
+		_ = file.SetRowHeight(subject.Name, 6, 60)
+
+		for i, student := range students {
+			rowNum := i + 7
+			file.SetCellValue(sheetName, "A"+strconv.Itoa(rowNum), i+1)
+			file.SetCellValue(sheetName, "B"+strconv.Itoa(rowNum), student.Name)
+
+			totalGrades := 0.0
+			gradeCount := 0
+
+			for j, label := range gradeLabels {
+				cell := string(rune('C'+j)) + strconv.Itoa(rowNum)
+				grade := getGradeForStudent(gradesData, student.ID, subject.ID, termName, label.ID)
+				if grade != nil {
+					file.SetCellValue(sheetName, cell, *grade)
+					totalGrades += *grade
+					gradeCount++
+				} else {
+					file.SetCellValue(sheetName, cell, "N/A")
+				}
+			}
+
+			for k, label := range reinforcementLabels {
+				cell := string(rune('C'+len(gradeLabels)+k)) + strconv.Itoa(rowNum)
+				grade := getReinforcementGradeForStudent(reinforcementGrades, student.ID, subject.ID, label)
+				if grade != nil {
+					file.SetCellValue(sheetName, cell, *grade)
+					totalGrades += *grade
+					gradeCount++
+				} else {
+					file.SetCellValue(sheetName, cell, "N/A")
+				}
+			}
+
+			averageCell := string(rune('C'+len(gradeLabels)+len(reinforcementLabels))) + strconv.Itoa(rowNum)
+			if gradeCount > 0 {
+				file.SetCellValue(sheetName, averageCell, totalGrades/float64(gradeCount))
+			} else {
+				file.SetCellValue(sheetName, averageCell, "N/A")
+			}
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+	w.Header().Set("Content-Disposition", "attachment;filename=teacher_grades.xlsx")
+
+	if err := file.Write(w); err != nil {
+		http.Error(w, "Error writing file", http.StatusInternalServerError)
+		log.Printf("Error writing file: %v\n", err)
+		return
+	}
+}
+
+func getGradeForStudent(gradesData models.GradesData, studentID, subjectID int, termName string, labelID int) *float64 {
+	for _, studentGrades := range gradesData.Grades {
+		if studentGrades.StudentID == studentID && studentGrades.SubjectID == subjectID {
+			for _, termGrades := range studentGrades.Terms {
+				if termGrades.Term == termName {
+					for _, grade := range termGrades.Grades {
+						if grade.LabelID == labelID {
+							gradeValue := float64(grade.Grade)
+							return &gradeValue
+						}
+					}
+				}
+			}
+		}
+	}
+	log.Printf("No grade found for student %d, subject %d, term %s, label ID %d\n", studentID, subjectID, termName, labelID)
+	return nil
+}
+
+func getReinforcementGradeForStudent(reinforcementGrades []models.ReinforcementGradeLabel, studentID, subjectID int, label string) *float64 {
+	for _, grade := range reinforcementGrades {
+		if grade.StudentID == studentID && grade.SubjectID == subjectID && grade.Label == label {
+			gradeValue := float64(grade.Grade)
+			return &gradeValue
+		}
+	}
+	log.Printf("No reinforcement grade found for student %d, subject %d, label %s\n", studentID, subjectID, label)
+	return nil
+}
+
+func unique(strings []string) []string {
+	uniqueStrings := make(map[string]bool)
+	for _, str := range strings {
+		uniqueStrings[str] = true
+	}
+	var result []string
+	for str := range uniqueStrings {
+		result = append(result, str)
+	}
+	return result
+}
+
 //////////////////////////PDF ACTA DE COMPROMISO///////////////////////////
 
 func GenerateReportHandler(w http.ResponseWriter, r *http.Request) {
@@ -172,132 +714,8 @@ func loadTemplate(pdf *gofpdf.Fpdf, teacherData *models.TeacherData, classroom *
 	return nil
 }
 
-//////////////////////////////XLSX TERM REPORT///////////////////////////
-
-func GenerateAveragesExcelReport(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	classroomIDStr := vars["classroomID"]
-
-	classroomID, err := strconv.Atoi(classroomIDStr)
-	if err != nil {
-		http.Error(w, "Invalid classroom ID", http.StatusBadRequest)
-		return
-	}
-
-	// Fetch students, subjects, and averages
-	students, err := database.GetStudentsByClassroomID(classroomID)
-	if err != nil {
-		http.Error(w, "Error fetching students", http.StatusInternalServerError)
-		log.Printf("Error fetching students: %v\n", err)
-		return
-	}
-
-	subjects, err := database.GetSubjectsInClassroom(classroomID)
-	if err != nil {
-		http.Error(w, "Error fetching subjects", http.StatusInternalServerError)
-		log.Printf("Error fetching subjects: %v\n", err)
-		return
-	}
-
-	// Dummy termFactors. Adjust as needed or fetch dynamically if required.
-	termFactors := []models.TermFactor{
-		{Term: "bimestre1", Factor: 0.8},
-		{Term: "bimestre2", Factor: 0.2},
-	}
-
-	averagesData, err := database.FetchAveragesWithFactorsByClassroomID(classroomID, termFactors)
-	if err != nil {
-		http.Error(w, "Error fetching averages", http.StatusInternalServerError)
-		log.Printf("Error fetching averages: %v\n", err)
-		return
-	}
-
-	// Generate the Excel file
-	file := excelize.NewFile()
-
-	// Generate a separate sheet for each subject
-	for _, subject := range subjects {
-		sheetName := subject.Name
-		file.NewSheet(sheetName)
-
-		// Set the header row
-		headers := []string{"Number", "Student Name"}
-		terms := []string{"bimestre1", "bimestre2"}
-
-		for _, term := range terms {
-			headers = append(headers, term)
-			headers = append(headers, fmt.Sprintf("%s-%s", term, "Average-%"))
-		}
-		headers = append(headers, "Final Average")
-
-		for i, header := range headers {
-			cell := string(rune('A'+i)) + "1"
-			file.SetCellValue(sheetName, cell, header)
-		}
-
-		// Fill the student grades
-		for i, student := range students {
-			rowNum := i + 2
-			file.SetCellValue(sheetName, "A"+strconv.Itoa(rowNum), i+1)
-			file.SetCellValue(sheetName, "B"+strconv.Itoa(rowNum), student.Name)
-
-			totalAverage := 0.0
-			termCount := 0
-
-			for j, term := range terms {
-				cell := string(rune('C'+2*j)) + strconv.Itoa(rowNum)
-				factorCell := string(rune('C'+2*j+1)) + strconv.Itoa(rowNum)
-
-				studentAverage := getAverageForStudent(averagesData, student.ID, subject.ID, term)
-				if studentAverage != nil {
-					file.SetCellValue(sheetName, cell, studentAverage.Average)
-					file.SetCellValue(sheetName, factorCell, studentAverage.AveFactor)
-					totalAverage += float64(studentAverage.AveFactor) // Convert to float64
-					termCount++
-				} else {
-					file.SetCellValue(sheetName, cell, "N/A")
-					file.SetCellValue(sheetName, factorCell, "N/A")
-				}
-			}
-
-			averageCell := string(rune('C'+2*len(terms))) + strconv.Itoa(rowNum)
-			if termCount > 0 {
-				//file.SetCellValue(sheetName, averageCell, totalAverage/float64(termCount))
-				file.SetCellValue(sheetName, averageCell, totalAverage)
-			} else {
-				file.SetCellValue(sheetName, averageCell, "N/A")
-			}
-		}
-	}
-
-	// Set the response headers
-	w.Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-	w.Header().Set("Content-Disposition", "attachment;filename=averages.xlsx")
-
-	// Write the file to the response
-	if err := file.Write(w); err != nil {
-		http.Error(w, "Error writing file", http.StatusInternalServerError)
-		log.Printf("Error writing file: %v\n", err)
-		return
-	}
-}
-
-// Helper function to get the average for a student in a specific subject and term
-func getAverageForStudent(averagesData models.AveragesDataFactor, studentID, subjectID int, term string) *models.TermAverageFactor {
-	for _, studentAverages := range averagesData.Averages {
-		if studentAverages.StudentID == studentID && studentAverages.SubjectID == subjectID {
-			for _, termAverage := range studentAverages.Averages {
-				if termAverage.Term == term {
-					return &termAverage
-				}
-			}
-		}
-	}
-	log.Printf("No average found for student %d, subject %d, term %s\n", studentID, subjectID, term)
-	return nil
-}
-
-///////////////////////////////XLSX TEACHER REPORT///////////////////////
+/*
+///////////////////////////////XLSX TEACHER REPORT WITHOUT REINFORCEMENT///////////////////////
 
 // Handler function to generate the teacher_grades.xlsx report
 func GenerateTeacherGradesReport(w http.ResponseWriter, r *http.Request) {
@@ -306,6 +724,7 @@ func GenerateTeacherGradesReport(w http.ResponseWriter, r *http.Request) {
 	classroomIDStr := vars["classroomID"]
 	termIDStr := vars["termID"]
 	teacherIDStr := vars["teacherID"]
+	academicPeriodIDStr := vars["academicPeriodID"]
 
 	// Convert classroomID, termID, and teacherID to integers
 	classroomID, err := strconv.Atoi(classroomIDStr)
@@ -323,6 +742,12 @@ func GenerateTeacherGradesReport(w http.ResponseWriter, r *http.Request) {
 	teacherID, err := strconv.Atoi(teacherIDStr)
 	if err != nil {
 		http.Error(w, "Invalid teacher ID", http.StatusBadRequest)
+		return
+	}
+
+	academicPeriodID, err := strconv.Atoi(academicPeriodIDStr)
+	if err != nil {
+		http.Error(w, "Invalid Academic Period ID", http.StatusBadRequest)
 		return
 	}
 
@@ -364,7 +789,7 @@ func GenerateTeacherGradesReport(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Fetch terms by teacher ID to validate term
-	terms, err := database.GetTermsByTeacherID(teacherID)
+	terms, err := database.FetchTermsByAcademicPeriodFromDB(academicPeriodID)
 	if err != nil {
 		http.Error(w, "Error fetching terms", http.StatusInternalServerError)
 		log.Printf("Error fetching terms: %v\n", err)
@@ -563,6 +988,7 @@ func getGradeForStudent(gradesData models.GradesData, studentID, subjectID int, 
 	log.Printf("No grade found for student %d, subject %d, term %s, label ID %d\n", studentID, subjectID, termName, labelID)
 	return nil
 }
+*/
 
 /*
 err = file.MergeCell(sheetName, "A1", "N1")

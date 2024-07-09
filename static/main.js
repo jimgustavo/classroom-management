@@ -5,6 +5,7 @@ document.addEventListener("DOMContentLoaded", () => {
     fetchStudents();
     fetchSubjects();
     fetchGradeLabels();
+    fetchAcademicPeriods();
     fetchTerms(); 
     fetchTeacherData();
     setTeacherNameInNavBar();    // Set the teacher's name in the navigation bar
@@ -23,9 +24,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const gradeLabelForm = document.getElementById("grade-label-form");
     gradeLabelForm.addEventListener("submit", createGradeLabel);
-
-    const termForm = document.getElementById("term-form");
-    termForm.addEventListener("submit", createTerm);
 
     const logoutBtn = document.getElementById("logout-btn");
     logoutBtn.addEventListener("click", logout);
@@ -54,7 +52,6 @@ document.addEventListener("DOMContentLoaded", () => {
         { id: "classroom-form", event: "submit", handler: createClassroom },
         { id: "subject-form", event: "submit", handler: createSubject },
         { id: "grade-label-form", event: "submit", handler: createGradeLabel },
-        { id: "term-form", event: "submit", handler: createTerm },
         { id: "assign-grade-label-form", event: "submit", handler: assignGradeLabelToSubject },
         { id: "assign-classroom-form", event: "submit", handler: assignSubjectToClassroom }
     ];
@@ -68,6 +65,7 @@ document.addEventListener("DOMContentLoaded", () => {
             console.log(`${id} not found.`);
         }
     });
+    
 });
 
 ///////////////**********TEACHERS SECTION**************////////////////////////////
@@ -81,6 +79,14 @@ function setTeacherNameInNavBar() {
         teacherNavItem.querySelector("a").textContent = teacherName;
         teacherDataH2.textContent = `${teacherName} Data`;
     }
+}
+
+// Function to handle academic period change and fetch terms
+function handleAcademicPeriodChange() {
+    const dropdown = document.getElementById("academicPeriodDropdown");
+    const academicPeriodID = dropdown.value;
+    localStorage.setItem("academic_period", academicPeriodID); // Store the selected academic period ID
+    fetchTerms();
 }
 
 async function logout() {
@@ -232,10 +238,7 @@ async function fetchClassrooms() {
     try {
         const token = localStorage.getItem("token");
         const teacherID = localStorage.getItem("teacher_id");
-        //const teacher_name = localStorage.getItem("teacher_name");
-        console.log("token:", token);
-        //console.log("teacher_id:", teacher_id);
-        //console.log("teacher_name:", teacher_name);
+        console.log("token:",token);
         const response = await fetch(`/api/classrooms/teacher/${teacherID}`, {
             headers: {
                 "Authorization": `Bearer ${token}`
@@ -282,8 +285,8 @@ function displayClassrooms(classrooms) {
         showSubjectsBtn.addEventListener("click", async () => {
             // Fetch terms for the modal
             const token = localStorage.getItem("token");
-            const teacherID = localStorage.getItem("teacher_id");
-            const termsResponse = await fetch(`/api/terms/teacher/${teacherID}`, {
+            const academicPeriodID = localStorage.getItem("academic_period");
+            const termsResponse = await fetch(`/api/academic_periods/${academicPeriodID}/terms`, {
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json",
@@ -317,8 +320,8 @@ function displayClassrooms(classrooms) {
         addGradesBtn.addEventListener("click", async () => {
             // Fetch terms for the modal
             const token = localStorage.getItem("token");
-            const teacherID = localStorage.getItem("teacher_id");
-            const response = await fetch(`/api/terms/teacher/${teacherID}`, {
+            const academicPeriodID = localStorage.getItem("academic_period");
+            const response = await fetch(`/api/academic_periods/${academicPeriodID}/terms`, {
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json",
@@ -336,8 +339,8 @@ function displayClassrooms(classrooms) {
         gradesBtn.addEventListener("click", async () => {
             // Fetch terms for the modal
             const token = localStorage.getItem("token");
-            const teacherID = localStorage.getItem("teacher_id");
-            const response = await fetch(`/api/terms/teacher/${teacherID}`, {
+            const academicPeriodID = localStorage.getItem("academic_period");
+            const response = await fetch(`/api/academic_periods/${academicPeriodID}/terms`, {
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json",
@@ -352,8 +355,19 @@ function displayClassrooms(classrooms) {
         const averagesBtn = document.createElement("button");
         averagesBtn.textContent = "Averages";
         averagesBtn.classList.add("averages-btn");
+        
         averagesBtn.addEventListener("click", () => {
-            window.location.href = `display-averages.html?classroomID=${classroom.id}&classroomName=${classroom.name}`;
+            const academicPeriodID = localStorage.getItem("academic_period");
+            console.log("Academic Period ID:", academicPeriodID);
+            if (academicPeriodID == 3) {
+                console.log("Redirecting to the new trimester averages page");
+                window.location.href = `display-averages-trimester.html?classroomID=${classroom.id}&classroomName=${classroom.name}`;
+            } else if(academicPeriodID == 1) {
+                console.log("Redirecting to the standard averages page");
+                window.location.href = `display-averages.html?classroomID=${classroom.id}&classroomName=${classroom.name}`;
+            } else {
+                console.log("You need to select an Academic Period before going to averages.");
+            }
         });
 
         card.appendChild(heading);
@@ -877,12 +891,14 @@ async function deleteSubject(subjectId) {
 }
 
 async function fetchTermsForSubject(subjectID, subjects) {
+    const token = localStorage.getItem("token");
+    const academicPeriodID = localStorage.getItem("academic_period");
     try {
-        const response = await fetch(`/api/subjects/${subjectID}/terms`, {
+        const response = await fetch(`/api/academic_periods/${academicPeriodID}/terms`, {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",
-                "Authorization": `Bearer ${localStorage.getItem("token")}`
+                "Authorization": `Bearer ${token}`
             },
         })
         const terms = await response.json();
@@ -1135,78 +1151,49 @@ async function assignGradeLabelToSubject(event) {
         alert("An error occurred while assigning the grade label. Please try again later.");
     }
 }
+
+///////////////*****ACADEMIC PERIOD SECTION********/////////////////////////
+// Function to fetch and populate academic periods dropdown
+async function fetchAcademicPeriods() {
+    try {
+        const token = localStorage.getItem("token");
+        const response = await fetch(`/api/academic_periods`, {
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
+        });
+        const academicPeriods = await response.json();
+        populateAcademicPeriodDropdown(academicPeriods);
+    } catch (error) {
+        console.error("Error fetching academic periods:", error);
+    }
+}
+
 ///////////////**********TERM SECTION**************////////////////////////////
 
+// Function to fetch terms based on selected academic period
 async function fetchTerms() {
     try {
         const token = localStorage.getItem("token");
-        const teacherID = localStorage.getItem("teacher_id");
-        const response = await fetch(`/api/terms/teacher/${teacherID}`, {
+        const academicPeriodID = localStorage.getItem("academic_period")
+        
+        if (!academicPeriodID) {
+            console.error("No academic period selected");
+            return;
+        }
+
+        const response = await fetch(`/api/academic_periods/${academicPeriodID}/terms`, {
             headers: {
                 "Authorization": `Bearer ${token}`
             }
         });
         const terms = await response.json();
-        displayTerms(terms);
-        populateTermDropdown(terms); // Populate dropdown with subjects
+        populateTermDropdown(terms); // Populate dropdown with terms
     } catch (error) {
         console.error("Error fetching terms:", error);
     }
 }
 
-function displayTerms(terms) {
-    const termList = document.getElementById("term-list");
-    termList.innerHTML = "";
-    terms.forEach(term => {
-        const li = document.createElement("li");
-        li.textContent = `Term: ${term.name}`;
-
-        // Create delete button
-        const deleteBtn = document.createElement("button");
-        deleteBtn.textContent = "Delete";
-        deleteBtn.classList.add("delete-btn");
-
-        // Attach click event listener to delete button
-        deleteBtn.addEventListener("click", () => {
-            deleteTerm(term.id); // Assuming each term has an 'id' property
-        });
-
-        li.appendChild(deleteBtn);
-        termList.appendChild(li);
-    });
-}
-
-async function createTerm(event) {
-    event.preventDefault();
-
-    const termName = document.getElementById("term-name").value;
-    const token = localStorage.getItem("token");
-    const teacherID = parseInt(localStorage.getItem("teacher_id"));
-
-    // Replace spaces with underscores in the term name
-    const sanitizedTermName = termName.replace(/\s+/g, "_");
-
-    try {
-        const response = await fetch("/api/terms", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`
-            },
-            body: JSON.stringify({ name: sanitizedTermName, teacher_id: teacherID })
-        });
-        if (response.ok) {
-            alert("Term created successfully!");
-            fetchTerms(); // Refresh the term list
-        } else {
-            const errorData = await response.json();
-            alert(`Failed to create term: ${errorData.message}`);
-        }
-    } catch (error) {
-        console.error("Error creating term:", error);
-        alert("An error occurred while creating the term. Please try again later.");
-    }
-}
 
 async function deleteTerm(termId) {
     try {
@@ -1311,6 +1298,24 @@ function populateGradeLabelDropdown(gradeLabels) {
     });
 }
 
+// Function to populate the academic periods dropdown
+function populateAcademicPeriodDropdown(academicPeriods) {
+    const dropdown = document.getElementById("academicPeriodDropdown");
+    academicPeriods.forEach(period => {
+        const option = document.createElement("option");
+        option.value = period.id;
+        option.textContent = period.name;
+        dropdown.appendChild(option);
+    });
+
+    // Set the selected option from localStorage if it exists
+    const storedAcademicPeriodID = localStorage.getItem("academic_period");
+    if (storedAcademicPeriodID) {
+        dropdown.value = storedAcademicPeriodID;
+        fetchTerms(); // Fetch terms for the stored academic period
+    }
+}
+
 function populateTermDropdown(terms) {
     const termDropdown = document.getElementById("term-assign-dropdown");
     termDropdown.innerHTML = ""; // Clear existing options
@@ -1353,4 +1358,3 @@ window.addEventListener('click', (event) => {
         closeModal();
     }
 });
-

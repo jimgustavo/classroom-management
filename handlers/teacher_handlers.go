@@ -13,14 +13,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-type Credentials struct {
-	Name     string `json:"name"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
-}
-
 func SignUp(w http.ResponseWriter, r *http.Request) {
-	var creds Credentials
+	var creds models.Credentials
 	err := json.NewDecoder(r.Body).Decode(&creds)
 	if err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
@@ -33,10 +27,8 @@ func SignUp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Println("Original password:", creds.Password)
-	log.Println("Hashed password:", string(hashedPassword))
-
-	err = database.CreateTeacher(creds.Name, creds.Email, string(hashedPassword))
+	role := "teacher" // Default role
+	err = database.CreateTeacher(creds.Name, creds.Email, string(hashedPassword), role)
 	if err != nil {
 		http.Error(w, "Failed to create teacher", http.StatusInternalServerError)
 		return
@@ -46,14 +38,14 @@ func SignUp(w http.ResponseWriter, r *http.Request) {
 }
 
 func Login(w http.ResponseWriter, r *http.Request) {
-	var credentials Credentials
+	var credentials models.Credentials
 	err := json.NewDecoder(r.Body).Decode(&credentials)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	teacherID, err := database.AuthenticateTeacher(credentials.Email, credentials.Password)
+	teacherID, role, err := database.AuthenticateTeacher(credentials.Email, credentials.Password)
 	if err != nil {
 		log.Println("Error:", err) // Add logging for error
 		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
@@ -67,7 +59,9 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := middleware.GenerateToken(teacherID)
+	teacher.Role = role // Ensure the role is set in the teacher object
+
+	token, err := middleware.GenerateToken(teacherID, role)
 	if err != nil {
 		log.Println("Error:", err) // Add logging for error
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -78,9 +72,30 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		"token":      token,
 		"teacher_id": teacherID,
 		"teacher":    teacher,
+		"role":       role,
 	}
 
 	json.NewEncoder(w).Encode(response)
+}
+
+func UpdateTeacherRoleHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	teacherID, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		http.Error(w, "Invalid teacher ID", http.StatusBadRequest)
+		return
+	}
+
+	role := vars["role"] // Get the role from the router (e.g., "proteacher")
+
+	err = database.UpdateTeacherRole(teacherID, role)
+	if err != nil {
+		http.Error(w, "Failed to update role", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"message": "Role updated to " + role})
 }
 
 func Logout(w http.ResponseWriter, r *http.Request) {

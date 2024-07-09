@@ -26,7 +26,6 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	//defer db.Close()  // Ensure the database connection is closed when the program exits
 
 	// Initialize router
 	router := mux.NewRouter()
@@ -35,40 +34,64 @@ func main() {
 	router.HandleFunc("/login", handlers.Login).Methods("POST")
 	router.HandleFunc("/signup", handlers.SignUp).Methods("POST")
 	router.HandleFunc("/logout", handlers.Logout)
-	router.HandleFunc("/teachers", handlers.GetAllTeachersHandler).Methods("GET")
-	router.HandleFunc("/teachers/{id}", handlers.DeleteTeacherHandler).Methods("DELETE")
-	router.HandleFunc("/classrooms", handlers.GetAllClassrooms).Methods("GET")
-	router.HandleFunc("/students", handlers.GetAllStudents).Methods("GET")
-	router.HandleFunc("/subjects", handlers.GetAllSubjects).Methods("GET")
-	router.HandleFunc("/grade-labels", handlers.GetAllGradeLabels).Methods("GET")
-	router.HandleFunc("/terms", handlers.GetAllTerms).Methods("GET")
-	router.HandleFunc("/subjects/{subjectID}/terms/{termID}/grade-labels", handlers.GetGradeLabelsForSubject).Methods("GET")
-	router.HandleFunc("/classrooms/{classroomID}/averages", handlers.GetAverageGradesByClassroomID).Methods("GET")
+	// Grades routes
+	router.HandleFunc("/classroom/{classroomID}/grades/get", handlers.GetGradesByClassroomID).Methods("GET")
+	router.HandleFunc("/classroom/{classroomID}/terms/{termID}/grades", handlers.GetGradesByClassroomIDAndTermID).Methods("GET")
+	// Reinforcement grades routes
+	router.HandleFunc("/grade-labels/reinforcement", handlers.GetAllReinforcementGradeLabels).Methods("GET")
+	router.HandleFunc("/grade-labels/reinforcement/teacher/{teacherID}", handlers.GetReinforcementGradeLabelsByTeacher).Methods("GET")
+	router.HandleFunc("/grade-labels/reinforcement/classroom/{classroomID}/term/{termID}", handlers.GetReinforcementGradeLabelsByClassroomAndTerm).Methods("GET")
+	// Averages routes
+	router.HandleFunc("/classroom/{classroomID}/averages", handlers.GetAverageGradesByClassroomID).Methods("GET")
 	router.HandleFunc("/classroom/{classroomID}/averageswithfactors", handlers.GetAveragesWithFactorsByClassroomID).Methods("GET")
-	router.HandleFunc("/classrooms/{classroomID}/grades/get", handlers.GetGradesByClassroomID).Methods("GET")
-	router.HandleFunc("/classrooms/{classroomID}/terms/{termID}/grades", handlers.GetGradesByClassroomIDAndTermID).Methods("GET")
-	router.HandleFunc("/grade-labels/teacher/{teacherID}", handlers.GetGradeLabelsByTeacherID).Methods("GET")
-	router.HandleFunc("/subjects/{subjectID}/terms/{termID}/grade-labels", handlers.GetGradeLabelsForSubject).Methods("GET")
-
-	// XLSX REPORTS
-	router.HandleFunc("/xlsx-report/teachers/{teacherID}/classrooms/{classroomID}/terms/{termID}", handlers.GenerateTeacherGradesReport).Methods("GET")
-	router.HandleFunc("/xlsx-average/classroom/{classroomID}", handlers.GenerateAveragesExcelReport).Methods("GET")
-
-	// PDF REPORT
-	router.HandleFunc("/pdfminute/teacher/{teacherID}/classroom/{classroomID}/student/{studentID}", handlers.GenerateReportHandler).Methods("GET")
-
+	router.HandleFunc("/classroom/{classroomID}/averageswithreinforcement", handlers.GetAveragesWithReinforcementByClassroomID).Methods("GET")
+	router.HandleFunc("/classroom/{classroomID}/averageswithfactors_trimesters", handlers.GetAveragesWithFactorsByClassroomIDForTrimesters).Methods("GET")
+	// XLSX REPORTS routes
+	router.HandleFunc("/xlsx-report/teachers/{teacherID}/classrooms/{classroomID}/academicPeriod/{academicPeriodID}/terms/{termID}", handlers.GenerateTeacherGradesReport).Methods("GET")
+	router.HandleFunc("/xlsx-average/teachers/{teacherID}/classrooms/{classroomID}/academicPeriod/{academicPeriodID}", handlers.GenerateFinalAveragesReport).Methods("GET")
 	// TeacherData routes
 	router.HandleFunc("/teacherdata", handlers.CreateOrUpdateTeacherDataHandler).Methods("POST")
-	router.HandleFunc("/teacherdata", handlers.GetAllTeacherDataHandler).Methods("GET")
 	router.HandleFunc("/teacherdata/{teacherID}", handlers.GetTeacherDataByTeacherIDHandler).Methods("GET")
 	router.HandleFunc("/teacherdata/{id}", handlers.GetTeacherDataByIDHandler).Methods("GET")
 	router.HandleFunc("/teacherdata/{id}", handlers.UpdateTeacherDataHandler).Methods("PUT")
 	router.HandleFunc("/teacherdata/{id}", handlers.DeleteTeacherDataHandler).Methods("DELETE")
+	// Admin routes
+	adminRouter := router.PathPrefix("/admin").Subrouter()
+	adminRouter.Use(middleware.Authenticate)
+	adminRouter.Use(middleware.AdminOnly)
+	adminRouter.HandleFunc("/classrooms", handlers.GetAllClassrooms).Methods("GET")
+	adminRouter.HandleFunc("/teachers", handlers.GetAllTeachersHandler).Methods("GET")
+	adminRouter.HandleFunc("/teacher/{id}", handlers.DeleteTeacherHandler).Methods("DELETE")
+	adminRouter.HandleFunc("/teacherdata", handlers.GetAllTeacherDataHandler).Methods("GET")
+	adminRouter.HandleFunc("/teacher/{id}/role/{role}", handlers.UpdateTeacherRoleHandler).Methods("PUT")
+	// Academic Period routes
+	adminRouter.HandleFunc("/academic_periods", handlers.CreateAcademicPeriodHandler).Methods("POST")
+	adminRouter.HandleFunc("/academic_periods", handlers.GetAllAcademicPeriodsHandler).Methods("GET")
+	adminRouter.HandleFunc("/academic_periods/{id}", handlers.GetAcademicPeriodByIDHandler).Methods("GET")
+	adminRouter.HandleFunc("/academic_periods/{id}", handlers.UpdateAcademicPeriodHandler).Methods("PUT")
+	adminRouter.HandleFunc("/academic_periods/{id}", handlers.DeleteAcademicPeriodHandler).Methods("DELETE")
+	adminRouter.HandleFunc("/academic_periods/{academicPeriodID}/terms/{termID}", handlers.AssignTermToAcademicPeriodHandler).Methods("POST")
+	adminRouter.HandleFunc("/academic_periods/{id}/terms", handlers.GetTermsByAcademicPeriod).Methods("GET")
+	// Term routes
+	adminRouter.HandleFunc("/terms", handlers.GetAllTerms).Methods("GET")
+	adminRouter.HandleFunc("/terms", handlers.CreateTerm).Methods("POST")
+	adminRouter.HandleFunc("/terms/{id}", handlers.UpdateTerm).Methods("PUT")
+	adminRouter.HandleFunc("/terms/{id}", handlers.DeleteTerm).Methods("DELETE")
+	//
+	adminRouter.HandleFunc("/students", handlers.GetAllStudents).Methods("GET")
+	adminRouter.HandleFunc("/subjects", handlers.GetAllSubjects).Methods("GET")
+	adminRouter.HandleFunc("/grade-labels", handlers.GetAllGradeLabels).Methods("GET")
 
-	// Protected routes
+	// ProTeacher routes
+	proTeacherRouter := router.PathPrefix("/proteacher").Subrouter()
+	proTeacherRouter.Use(middleware.Authenticate)
+	proTeacherRouter.Use(middleware.ProTeacherOnly)
+	// PDF REPORT
+	proTeacherRouter.HandleFunc("/pdfminute/teacher/{teacherID}/classroom/{classroomID}/student/{studentID}", handlers.GenerateReportHandler).Methods("GET")
+
+	// Regular teacher routes (protected)
 	apiRouter := router.PathPrefix("/api").Subrouter()
 	apiRouter.Use(middleware.Authenticate)
-
 	// Classroom routes
 	apiRouter.HandleFunc("/classrooms/teacher/{teacherID}", handlers.GetClassroomsByTeacherID).Methods("GET")
 	apiRouter.HandleFunc("/classrooms/{id}", handlers.GetClassroom).Methods("GET")
@@ -85,7 +108,6 @@ func main() {
 	apiRouter.HandleFunc("/classrooms/{id}", handlers.DeleteClassroom).Methods("DELETE")
 	apiRouter.HandleFunc("/classrooms/{classroomID}/students/{studentID}", handlers.UnrollStudentFromClassroom).Methods("DELETE")
 	apiRouter.HandleFunc("/classrooms/{classroomID}/subjects/{subjectID}", handlers.RemoveSubjectFromClassroom).Methods("DELETE")
-
 	// Student routes
 	apiRouter.HandleFunc("/students/teacher/{teacherID}", handlers.GetStudentsByTeacherID).Methods("GET")
 	apiRouter.HandleFunc("/students/with-classroom-and-subjects", handlers.GetAllStudentsWithClassroomAndSubjects).Methods("GET")
@@ -94,29 +116,30 @@ func main() {
 	apiRouter.HandleFunc("/students", handlers.CreateStudent).Methods("POST")
 	apiRouter.HandleFunc("/students/{id}", handlers.UpdateStudent).Methods("PUT")
 	apiRouter.HandleFunc("/students/{id}", handlers.DeleteStudent).Methods("DELETE")
-
 	// Subject routes
 	apiRouter.HandleFunc("/subjects/teacher/{teacherID}", handlers.GetSubjectsByTeacherID).Methods("GET")
 	apiRouter.HandleFunc("/subjects/{subjectID}/students", handlers.GetStudentsBySubjectID).Methods("GET")
-	apiRouter.HandleFunc("/subjects/{subjectID}/terms", handlers.GetTermsBySubjectID).Methods("GET")
 	apiRouter.HandleFunc("/subjects/{subjectID}/terms/{termID}/grade-labels", handlers.GetGradeLabelsForSubject).Methods("GET")
 	apiRouter.HandleFunc("/subjects", handlers.CreateSubject).Methods("POST")
 	apiRouter.HandleFunc("/subjects/{subjectID}/grade-labels/{gradeLabelID}/terms/{termID}", handlers.AssignGradeLabelToSubjectByTerm).Methods("POST")
 	apiRouter.HandleFunc("/subjects/{id}", handlers.UpdateSubject).Methods("PUT")
 	apiRouter.HandleFunc("/subjects/{id}", handlers.DeleteSubject).Methods("DELETE")
 	apiRouter.HandleFunc("/subjects/{subjectID}/grade-labels/{gradeLabelID}/terms/{termID}", handlers.RemoveGradeLabelFromSubjectByTerm).Methods("DELETE")
-
 	// Grade Labels routes
 	apiRouter.HandleFunc("/grade-labels/teacher/{teacherID}", handlers.GetGradeLabelsByTeacherID).Methods("GET")
 	apiRouter.HandleFunc("/grade-labels", handlers.CreateGradeLabel).Methods("POST")
 	apiRouter.HandleFunc("/grade-labels/{id}", handlers.UpdateGradeLabel).Methods("PUT")
 	apiRouter.HandleFunc("/grade-labels/{id}", handlers.DeleteGradeLabel).Methods("DELETE")
-
+	// Reinforcement routes
+	apiRouter.HandleFunc("/grade-labels/reinforcement", handlers.CreateReinforcementGradeLabel).Methods("POST")
+	apiRouter.HandleFunc("/grade-labels/reinforcement", handlers.GetAllReinforcementGradeLabels).Methods("GET")
+	apiRouter.HandleFunc("/grade-labels/reinforcement/teacher/{teacherID}", handlers.GetReinforcementGradeLabelsByTeacher).Methods("GET")
+	apiRouter.HandleFunc("/grade-labels/reinforcement/classroom/{classroomID}/term/{termID}", handlers.GetReinforcementGradeLabelsByClassroomAndTerm).Methods("GET")
+	apiRouter.HandleFunc("/grade-labels/reinforcement/{id}", handlers.DeleteReinforcementGradeLabel).Methods("DELETE")
+	// Academic Period routes
+	apiRouter.HandleFunc("/academic_periods", handlers.GetAllAcademicPeriodsHandler).Methods("GET")
 	// Term routes
-	apiRouter.HandleFunc("/terms/teacher/{teacherID}", handlers.GetTermsByTeacherID).Methods("GET")
-	apiRouter.HandleFunc("/terms", handlers.CreateTerm).Methods("POST")
-	apiRouter.HandleFunc("/terms/{id}", handlers.UpdateTerm).Methods("PUT")
-	apiRouter.HandleFunc("/terms/{id}", handlers.DeleteTerm).Methods("DELETE")
+	apiRouter.HandleFunc("/academic_periods/{id}/terms", handlers.GetTermsByAcademicPeriod).Methods("GET")
 
 	// Serve static files from the "static" directory
 	router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
@@ -124,7 +147,6 @@ func main() {
 	// Start the HTTP server
 	log.Println("Server started on port 8080")
 	log.Fatal(http.ListenAndServe(":8080", enableCors(router)))
-	//log.Fatal(http.ListenAndServe(":8080", router))   //In case, we don't use CORS
 }
 
 /*
@@ -144,7 +166,7 @@ CREATE DATABASE classroom_management;
 
 DROP DATABASE classroom_management;     //for deleting a database
 
-\c classroom_management
+\c classroom_management;
 
 pwd
 
@@ -171,6 +193,31 @@ CREATE TABLE grade_labels (
     teacher_id INT REFERENCES teachers(id)
 );
 
+ENABLE pgcrypto:
+-- Enable the pgcrypto extension
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+-- Verify the extension is enabled
+\dx
+
+
+
+SIGNUP ADMIN USERS:
+-- Connect to your PostgreSQL database
+\c classroom_management;
+
+-- Insert a new admin user
+INSERT INTO teachers (name, email, password, role)
+VALUES ('tavito', 'jimgustavo@icloud.com', crypt('mamacita', gen_salt('bf')), 'admin');
+
+DELETE ADMIN USERS:
+-- Connect to your PostgreSQL database
+\c classroom_management;
+
+-- Delete an admin user by email
+DELETE FROM teachers WHERE email = 'jimgustavo@icloud.com' AND role = 'admin';
+
+
 ////////////////CURL COMMANDS///////////////////
 Sign Up:
 
@@ -185,12 +232,11 @@ curl -X POST http://localhost:8080/signup \
 curl -X POST http://localhost:8080/login \
     -H "Content-Type: application/json" \
     -d '{
-        "email": "jimgustavo1987@gmail.com",
-        "password": "hola"
+        "email": "jimgustavo@icloud.com",
+        "password": "mamacita"
     }'
 
-	returned token: {"token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZWFjaGVyX2lkIjoxLCJleHAiOjE3MTgzODE5NjN9.J7v5VPJgaRgaVCgZqOL4KG9aUHe8RvGqG5JLM7dHSCc"}
-
+	returned token: {"token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZWFjaGVyX2lkIjo0LCJyb2xlIjoiYWRtaW4iLCJleHAiOjE3MTk5NjkzMzN9.HRAF33FNjNju6gK6V_mkuNR79kfA9SbMwP3FThFz5yA"}
 
 
 Create a Classroom:
@@ -210,6 +256,11 @@ curl -X GET http://localhost:8080/api/classrooms \
 curl -X GET http://localhost:8080/api/classrooms/teacher/4 \
     -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZWFjaGVyX2lkIjo2LCJleHAiOjE3MTg1MDY4MTd9.aYaUjQN3j_-5xEgzaLntBxDOK1ZkEr_xpmj8HTI-Kxw"
 
+
+Get all teachers:
+
+curl -X GET http://localhost:8080/admin/teachers \
+    -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZWFjaGVyX2lkIjo1LCJyb2xlIjoiYWRtaW4iLCJleHAiOjE3MTk5NzY4MTV9.yKqCkntDL_M55EJX5kgWfF-UJY0rQIPnNtnABAE_Vk4"
 
 Create a Student:
 
@@ -276,5 +327,7 @@ curl -X POST http://localhost:8080/teacherdata \
     "inspector": "Inspector Name"
 }'
 
+curl -X PUT http://localhost:8080/admin/teacher/1/role/proteacher \
+    -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZWFjaGVyX2lkIjo1LCJyb2xlIjoiYWRtaW4iLCJleHAiOjE3MjAwMjgyMzV9.1BJSr31K5Oqyq3_0gXbAyTA6YCu7HYXD38_-6sIf4Nw"
 
 */

@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 	"strconv"
 
@@ -10,31 +9,6 @@ import (
 	"github.com/jimgustavo/classroom-management/database"
 	"github.com/jimgustavo/classroom-management/models"
 )
-
-func GetTermsByTeacherID(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	teacherID, err := strconv.Atoi(vars["teacherID"])
-	if err != nil {
-		log.Println("Invalid teacher ID:", err)
-		http.Error(w, "Invalid teacher ID", http.StatusBadRequest)
-		return
-	}
-
-	log.Println("Fetching terms for teacher ID:", teacherID)
-	terms, err := database.GetTermsByTeacherID(teacherID)
-	if err != nil {
-		log.Println("Error fetching terms:", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	log.Println("Fetched terms:", terms)
-	if err := json.NewEncoder(w).Encode(terms); err != nil {
-		log.Println("Error encoding response:", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-}
 
 // GetAllTerms handles the retrieval of all terms
 func GetAllTerms(w http.ResponseWriter, r *http.Request) {
@@ -121,17 +95,4 @@ func DeleteTerm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
-}
-
-func GetTermsBySubjectID(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	subjectID := vars["subjectID"]
-
-	terms, err := database.GetTermsBySubjectID(subjectID)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	json.NewEncoder(w).Encode(terms)
 }

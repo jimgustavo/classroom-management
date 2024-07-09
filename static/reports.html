@@ -9,20 +9,41 @@
 <body>
     <h1>Reports</h1>
     <section id="reporte-de-calificaciones">
-        <h2>Reporte de Calificaciones</h2>
-        <!-- Additional content for this section -->
+        <h2>Descargar Reporte de Calificaciones</h2>
+        <div class="dropdown-container">
+            <select id="classroom-report-dropdown">
+                <option value="">--Select Classroom--</option>
+                <!-- Options will be populated dynamically -->
+            </select>
+        </div>
+        <div class="dropdown-container">
+            <select id="term-report-dropdown">
+                <option value="" disabled selected>--Select a Term--</option>
+                <!-- Term options will be populated dynamically -->
+            </select>
+        </div>
+        <button id="generate-xlsx-report">Generate XLSX Report</button>
     </section>
-    <section id="actas-de-compromiso">
-        <h2>Actas de Compromiso</h2>
-        <label for="classroom-dropdown">Select Classroom:</label>
-        <select id="classroom-dropdown">
+     <!-- Promedio Final Section -->
+     <section id="final-average">
+        <h2>Descarga Promedio Final</h2>
+        <select id="final-average-report-dropdown">
             <option value="">--Select Classroom--</option>
             <!-- Options will be populated dynamically -->
         </select>
+        <button id="generate-xlsx-average-report">Generate XLSX Average Report</button>
+    </section>
+    <section id="actas-de-compromiso">
+        <h2>Refuerzo Academico y Actas de Compromiso</h2>
         <div class="dropdown-container">
-            <label for="term-dropdown">Select Term:</label>
+        <select id="classroom-dropdown">
+            <option value="">--Select a Classroom--</option>
+            <!-- Options will be populated dynamically -->
+        </select>
+        </div>
+        <div class="dropdown-container">
             <select id="term-dropdown">
-                <option value="" disabled selected>Select a term</option>
+                <option value="" disabled selected>--Select a Term--</option>
                 <!-- Term options will be populated dynamically -->
             </select>
         </div>
@@ -30,11 +51,33 @@
             <!-- Students with low grades will be displayed here -->
         </div>
     </section>
-    <!-- Refuerzo Academico Section -->
-    <section id="refuerzo-academico">
-        <h2>Refuerzo Académico</h2>
-        <!-- Additional content for this section -->
-    </section>
+   
+    <div id="reinforcementModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2>Add Academic Reinforcement</h2>
+            <form id="reinforcementForm">
+                <input type="hidden" id="reinforcement-student" value="your_student_id_here">
+                <input type="hidden" id="reinforcement-classroom" value="your_classroom_id_here">
+                <input type="hidden" id="reinforcement-subject" value="your_subject_id_here">
+                <input type="hidden" id="reinforcement-term" value="your_term_id_here">
+
+                <label for="reinforcement-grade-label">Grade Label:</label>
+                <input type="text" id="reinforcement-grade-label" required>
+    
+                <label for="reinforcement-date">Date:</label>
+                <input type="date" id="reinforcement-date" required>
+    
+                <label for="reinforcement-skill">Skill:</label>
+                <input type="text" id="reinforcement-skill" required>
+                
+                <label for="reinforcement-grade">Grade:</label>
+                <input type="number" id="reinforcement-grade" step="0.01" min="0" max="10" required>
+                
+                <button type="submit">Add Reinforcement</button>
+            </form>
+        </div>
+    </div>    
     <script src="reports.js"></script>
 </body>
 </html>

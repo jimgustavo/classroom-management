@@ -160,3 +160,114 @@ func GetGradeLabelsForSubject(subjectID int, termID int) ([]models.GradeLabel, e
 
 	return gradeLabels, nil
 }
+
+///////////////////////////////ACADEMIC REINFORCEMENT/////////////////////////////
+
+func AddReinforcementGradeLabel(gradeLabel models.ReinforcementGradeLabel) error {
+	db, err := sql.Open("postgres", "postgres://tavito:mamacita@localhost:5432/classroom_management?sslmode=disable")
+	if err != nil {
+		log.Println("Error opening database connection:", err)
+		return err
+	}
+	defer db.Close()
+
+	query := `INSERT INTO reinforcement_grade_labels (student_id, classroom_id, subject_id, term_id, label, date, skill, teacher_id, grade)
+              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
+	_, err = db.Exec(query, gradeLabel.StudentID, gradeLabel.ClassroomID, gradeLabel.SubjectID, gradeLabel.TermID, gradeLabel.Label, gradeLabel.Date, gradeLabel.Skill, gradeLabel.TeacherID, gradeLabel.Grade)
+	if err != nil {
+		log.Println("Error executing database query:", err)
+	}
+	return err
+}
+
+func GetAllReinforcementGradeLabels() ([]models.ReinforcementGradeLabel, error) {
+	db, err := sql.Open("postgres", "postgres://tavito:mamacita@localhost:5432/classroom_management?sslmode=disable")
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
+
+	rows, err := db.Query(`SELECT id, student_id, classroom_id, subject_id, term_id, label, date, skill, teacher_id, grade FROM reinforcement_grade_labels`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var gradeLabels []models.ReinforcementGradeLabel
+	for rows.Next() {
+		var gradeLabel models.ReinforcementGradeLabel
+		if err := rows.Scan(&gradeLabel.ID, &gradeLabel.StudentID, &gradeLabel.ClassroomID, &gradeLabel.SubjectID, &gradeLabel.TermID, &gradeLabel.Label, &gradeLabel.Date, &gradeLabel.Skill, &gradeLabel.TeacherID, &gradeLabel.Grade); err != nil {
+			return nil, err
+		}
+		gradeLabels = append(gradeLabels, gradeLabel)
+	}
+	return gradeLabels, nil
+}
+
+func GetReinforcementGradeLabelsByTeacher(teacherID int) ([]models.ReinforcementGradeLabel, error) {
+	db, err := sql.Open("postgres", "postgres://tavito:mamacita@localhost:5432/classroom_management?sslmode=disable")
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
+
+	rows, err := db.Query(`SELECT id, student_id, classroom_id, subject_id, term_id, label, date, skill, teacher_id, grade FROM reinforcement_grade_labels WHERE teacher_id = $1`, teacherID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var gradeLabels []models.ReinforcementGradeLabel
+	for rows.Next() {
+		var gradeLabel models.ReinforcementGradeLabel
+		if err := rows.Scan(&gradeLabel.ID, &gradeLabel.StudentID, &gradeLabel.ClassroomID, &gradeLabel.SubjectID, &gradeLabel.TermID, &gradeLabel.Label, &gradeLabel.Date, &gradeLabel.Skill, &gradeLabel.TeacherID, &gradeLabel.Grade); err != nil {
+			return nil, err
+		}
+		gradeLabels = append(gradeLabels, gradeLabel)
+	}
+	return gradeLabels, nil
+}
+
+func GetReinforcementGradeLabelsByClassroomAndTerm(classroomID, termID int) ([]models.ReinforcementGradeLabel, error) {
+	db, err := sql.Open("postgres", "postgres://tavito:mamacita@localhost:5432/classroom_management?sslmode=disable")
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
+
+	query := `SELECT id, student_id, classroom_id, subject_id, term_id, label, date, skill, teacher_id, grade 
+              FROM reinforcement_grade_labels 
+              WHERE classroom_id = $1 AND term_id = $2`
+	rows, err := db.Query(query, classroomID, termID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var gradeLabels []models.ReinforcementGradeLabel
+	for rows.Next() {
+		var gradeLabel models.ReinforcementGradeLabel
+		if err := rows.Scan(&gradeLabel.ID, &gradeLabel.StudentID, &gradeLabel.ClassroomID, &gradeLabel.SubjectID, &gradeLabel.TermID, &gradeLabel.Label, &gradeLabel.Date, &gradeLabel.Skill, &gradeLabel.TeacherID, &gradeLabel.Grade); err != nil {
+			return nil, err
+		}
+		gradeLabels = append(gradeLabels, gradeLabel)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return gradeLabels, nil
+}
+
+func DeleteReinforcementGradeLabel(id int) error {
+	db, err := sql.Open("postgres", "postgres://tavito:mamacita@localhost:5432/classroom_management?sslmode=disable")
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	query := `DELETE FROM reinforcement_grade_labels WHERE id = $1`
+	_, err = db.Exec(query, id)
+	return err
+}

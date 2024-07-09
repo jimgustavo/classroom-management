@@ -11,73 +11,50 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// CreateTeacher inserts a new teacher record into the database with a hashed password
-func CreateTeacher(name, email, password string) error {
+// CreateTeacher inserts a new teacher record into the database with a hashed password and role
+func CreateTeacher(name, email, password, role string) error {
 	if db == nil {
 		return errors.New("database connection is not initialized")
 	}
 
-	query := `INSERT INTO teachers (name, email, password) VALUES ($1, $2, $3)`
-	_, err := db.Exec(query, name, email, password)
+	query := `INSERT INTO teachers (name, email, password, role) VALUES ($1, $2, $3, $4)`
+	_, err := db.Exec(query, name, email, password, role)
 	if err != nil {
 		log.Println("Error storing teacher in the database:", err)
 	}
 	return err
 }
 
-// AuthenticateTeacher verifies the teacher's email and password, and returns the teacher's ID
-func AuthenticateTeacher(email, password string) (int, error) {
+// AuthenticateTeacher verifies the teacher's email and password, and returns the teacher's ID and role
+func AuthenticateTeacher(email, password string) (int, string, error) {
 	if db == nil {
-		return 0, errors.New("database connection is not initialized")
+		return 0, "", errors.New("database connection is not initialized")
 	}
 
 	var (
 		id             int
 		hashedPassword string
+		role           string
 	)
 
-	query := `SELECT id, password FROM teachers WHERE email = $1`
-	err := db.QueryRow(query, email).Scan(&id, &hashedPassword)
+	query := `SELECT id, password, role FROM teachers WHERE email = $1`
+	err := db.QueryRow(query, email).Scan(&id, &hashedPassword, &role)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			log.Println("Teacher not found")
-			return 0, errors.New("teacher not found")
+			return 0, "", errors.New("teacher not found")
 		}
 		log.Println("Error retrieving teacher from database:", err)
-		return 0, err
+		return 0, "", err
 	}
-
-	log.Println("Provided password:", password)
-	log.Println("Retrieved hashed password:", hashedPassword)
 
 	err = bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
 	if err != nil {
 		log.Println("Error comparing password hash:", err)
-		return 0, errors.New("invalid credentials")
+		return 0, "", errors.New("invalid credentials")
 	}
 
-	log.Println("Authentication successful for teacher with ID:", id)
-
-	return id, nil
-}
-
-// GetTeacherByID retrieves a teacher's details by their ID
-func GetTeacherByID(teacherID int) (*models.Teacher, error) {
-	if db == nil {
-		return nil, errors.New("database connection is not initialized")
-	}
-
-	var teacher models.Teacher
-	query := `SELECT id, name, email FROM teachers WHERE id = $1`
-	err := db.QueryRow(query, teacherID).Scan(&teacher.ID, &teacher.Name, &teacher.Email)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, errors.New("teacher not found")
-		}
-		return nil, err
-	}
-
-	return &teacher, nil
+	return id, role, nil
 }
 
 // GetAllTeachers retrieves all teachers from the database without requiring authorization
@@ -86,7 +63,7 @@ func GetAllTeachers() ([]models.Teacher, error) {
 		return nil, errors.New("database connection is not initialized")
 	}
 
-	query := "SELECT id, name, email FROM teachers"
+	query := "SELECT id, name, email, role FROM teachers"
 	rows, err := db.Query(query)
 	if err != nil {
 		return nil, err
@@ -96,7 +73,7 @@ func GetAllTeachers() ([]models.Teacher, error) {
 	var teachers []models.Teacher
 	for rows.Next() {
 		var teacher models.Teacher
-		err := rows.Scan(&teacher.ID, &teacher.Name, &teacher.Email)
+		err := rows.Scan(&teacher.ID, &teacher.Name, &teacher.Email, &teacher.Role)
 		if err != nil {
 			return nil, err
 		}
@@ -107,6 +84,25 @@ func GetAllTeachers() ([]models.Teacher, error) {
 	}
 
 	return teachers, nil
+}
+
+// GetTeacherByID retrieves a teacher's details by their ID
+func GetTeacherByID(teacherID int) (*models.Teacher, error) {
+	if db == nil {
+		return nil, errors.New("database connection is not initialized")
+	}
+
+	var teacher models.Teacher
+	query := `SELECT id, name, email, role FROM teachers WHERE id = $1`
+	err := db.QueryRow(query, teacherID).Scan(&teacher.ID, &teacher.Name, &teacher.Email, &teacher.Role)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, errors.New("teacher not found")
+		}
+		return nil, err
+	}
+
+	return &teacher, nil
 }
 
 // DeleteTeacher deletes a specific teacher from the database without requiring authorization
@@ -122,6 +118,20 @@ func DeleteTeacher(id string) error {
 	}
 
 	return nil
+}
+
+// UpdateTeacherRole updates the role of a teacher
+func UpdateTeacherRole(teacherID int, role string) error {
+	if db == nil {
+		return errors.New("database connection is not initialized")
+	}
+
+	query := `UPDATE teachers SET role = $1 WHERE id = $2`
+	_, err := db.Exec(query, role, teacherID)
+	if err != nil {
+		log.Println("Error updating teacher role in the database:", err)
+	}
+	return err
 }
 
 // ////////////////////TEACHER DATA////////////////////

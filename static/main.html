@@ -18,7 +18,6 @@
                     <li><a href="#students">Students</a></li>
                     <li><a href="#subjects">Subjects</a></li>
                     <li><a href="#grade-labels">Grade Labels</a></li>
-                    <li><a href="#terms">Terms</a></li>
                     <li><a href="#reports">Reports</a></li>
                     <li id="teacher-nav-item"><a href="#teacherdata">Teacher</a></li>
                     <li><button id="logout-btn">Logout</button></li>
@@ -33,8 +32,11 @@
                 <div class="overlay"></div>
                 <div class="hero-content">
             </section>
-                             
-                            
+
+            <select id="academicPeriodDropdown" onchange="handleAcademicPeriodChange()">
+                <option value="">Select Academic Period</option>
+            </select>
+                                        
             <section id="classrooms">
                 <h2>Classrooms</h2>      
                     <div id="classroom-container" class="classroom-container">
@@ -152,21 +154,6 @@
                             <!-- Grade Labels will be dynamically added here -->
                         </select> <br/>
                         <button type="submit">Assign Grade Label</button>
-                    </form>
-                </div>
-            </section>
-            <section id="terms">
-                <h2>Terms</h2>
-                <div class="section-container">
-                    <ul id="term-list">
-                        <!-- Terms will be dynamically added here -->
-                    </ul>
-                </div>
-                <div class="section-container-inputs">
-                    <form id="term-form" action="#" method="post">
-                        <label for="term-name">Term Name:</label>
-                        <input type="text" id="term-name" name="term-name" required>
-                        <button type="submit">Submit Term</button>
                     </form>
                 </div>
             </section>

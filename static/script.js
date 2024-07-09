@@ -36,8 +36,13 @@ async function loginTeacher(event) {
             localStorage.setItem("token", data.token);
             localStorage.setItem("teacher_id", data.teacher_id);
             localStorage.setItem("teacher_name", data.teacher.name);
-            // Redirect to main.html
-            window.location.href = "main.html";
+            localStorage.setItem("role", data.role);
+            // Redirect based on role
+            if (data.role === "admin") {
+                window.location.href = "admin.html";
+            } else {
+                window.location.href = "main.html";
+            }
         } else {
             const errorData = await response.json();
             alert(`Login failed: ${errorData.message}`);

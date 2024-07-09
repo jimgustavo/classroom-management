@@ -194,3 +194,100 @@ func GetGradeLabelsForSubject(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(gradeLabels)
 }
+
+///////////////////////////////ACADEMIC REINFORCEMENT/////////////////////////////
+
+func CreateReinforcementGradeLabel(w http.ResponseWriter, r *http.Request) {
+	var gradeLabel models.ReinforcementGradeLabel
+	if err := json.NewDecoder(r.Body).Decode(&gradeLabel); err != nil {
+		log.Println("Error decoding request body:", err)
+		jsonError(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err := database.AddReinforcementGradeLabel(gradeLabel); err != nil {
+		log.Println("Error adding reinforcement grade label to database:", err)
+		jsonError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+}
+
+func jsonError(w http.ResponseWriter, message string, code int) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
+	json.NewEncoder(w).Encode(map[string]string{"error": message})
+}
+
+func GetAllReinforcementGradeLabels(w http.ResponseWriter, r *http.Request) {
+	gradeLabels, err := database.GetAllReinforcementGradeLabels()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(gradeLabels)
+}
+
+func GetReinforcementGradeLabelsByTeacher(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	teacherID, err := strconv.Atoi(vars["teacherID"])
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	gradeLabels, err := database.GetReinforcementGradeLabelsByTeacher(teacherID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(gradeLabels)
+}
+
+func GetReinforcementGradeLabelsByClassroomAndTerm(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	classroomID, err := strconv.Atoi(vars["classroomID"])
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	termID, err := strconv.Atoi(vars["termID"])
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	gradeLabels, err := database.GetReinforcementGradeLabelsByClassroomAndTerm(classroomID, termID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if gradeLabels == nil {
+		gradeLabels = []models.ReinforcementGradeLabel{} // Return an empty array instead of null
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(gradeLabels)
+}
+
+func DeleteReinforcementGradeLabel(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err := database.DeleteReinforcementGradeLabel(id); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
