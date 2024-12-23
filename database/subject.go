@@ -57,6 +57,23 @@ func CreateSubject(subject *models.Subject) error {
 	return nil
 }
 
+// CreateSubjectWithID inserts a new subject record with a specific ID into the database
+func CreateSubjectWithID(subject *models.Subject) error {
+	if db == nil {
+		return errors.New("database connection is not initialized")
+	}
+
+	// Insert subject with a provided ID
+	query := "INSERT INTO subjects (id, name, teacher_id) VALUES ($1, $2, $3)"
+	_, err := db.Exec(query, subject.ID, subject.Name, subject.TeacherID)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // GetAllSubjects retrieves all subjects from the database
 func GetAllSubjects() ([]models.Subject, error) {
 	if db == nil {

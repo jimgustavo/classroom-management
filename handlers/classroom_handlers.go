@@ -1,5 +1,4 @@
 // handlers/classroom_handlers.go
-
 package handlers
 
 import (
@@ -39,8 +38,15 @@ func CreateClassroom(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Insert classroom into the database
-	err = database.CreateClassroom(&classroom)
+	// Check if the ID is provided
+	if classroom.ID > 0 {
+		// Attempt to insert classroom with the provided ID
+		err = database.CreateClassroomWithID(&classroom)
+	} else {
+		// If no ID is provided, use the existing logic
+		err = database.CreateClassroom(&classroom)
+	}
+
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

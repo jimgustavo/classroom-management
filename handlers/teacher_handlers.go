@@ -1,3 +1,4 @@
+// handlers/teacher_handlers.go
 package handlers
 
 import (
@@ -5,6 +6,9 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"fmt"
+    "io"
+	"encoding/base64"
 
 	"github.com/gorilla/mux"
 	"github.com/jimgustavo/classroom-management/database"
@@ -262,4 +266,92 @@ func DeleteTeacherDataHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// Handler to upload or update a picture
+func UploadLogoHandler(w http.ResponseWriter, r *http.Request) {
+    if r.Method != http.MethodPost {
+        http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+        return
+    }
+
+    vars := mux.Vars(r)
+    teacherIDStr := vars["teacherID"]
+    teacherID, err := strconv.Atoi(teacherIDStr)
+    if err != nil {
+        http.Error(w, "Invalid teacher ID", http.StatusBadRequest)
+        return
+    }
+
+    file, _, err := r.FormFile("logo")
+    if err != nil {
+        http.Error(w, "Error retrieving the file", http.StatusBadRequest)
+        fmt.Println("Error retrieving the file:", err)
+        return
+    }
+    defer file.Close()
+
+    fileBytes, err := io.ReadAll(file)
+    if err != nil {
+        http.Error(w, "Error reading the file", http.StatusInternalServerError)
+        fmt.Println("Error reading the file:", err)
+        return
+    }
+
+    // Store the file in the database
+    err = database.SaveLogo(teacherID, fileBytes)
+    if err != nil {
+        http.Error(w, "Error saving the file to the database", http.StatusInternalServerError)
+        fmt.Println("Error saving the file to the database:", err)
+        return
+    }
+
+    fmt.Fprintf(w, "File uploaded successfully")
+}
+
+// Handler to display the b64 encoded picture
+func DisplayLogoHandler(w http.ResponseWriter, r *http.Request) {
+    vars := mux.Vars(r)
+    teacherIDStr := vars["teacherID"]
+    teacherID, err := strconv.Atoi(teacherIDStr)
+    if err != nil {
+        http.Error(w, "Invalid teacher ID", http.StatusBadRequest)
+        return
+    }
+
+    logo, err := database.GetLogo(teacherID)
+    if err != nil {
+        http.Error(w, "Error retrieving the logo from the database", http.StatusInternalServerError)
+        return
+    }
+
+    if logo == nil {
+        http.Error(w, "Logo not found", http.StatusNotFound)
+        return
+    }
+
+    // Encode the logo as a base64 string
+    base64Logo := base64.StdEncoding.EncodeToString(logo)
+    w.Header().Set("Content-Type", "text/plain")
+    fmt.Fprint(w, base64Logo)
+}
+
+// Handler to display the picture
+func DisplayLogoHandlerAsPicture(w http.ResponseWriter, r *http.Request) {
+    vars := mux.Vars(r)
+    teacherIDStr := vars["teacherID"]
+    teacherID, err := strconv.Atoi(teacherIDStr)
+    if err != nil {
+        http.Error(w, "Invalid teacher ID", http.StatusBadRequest)
+        return
+    }
+
+    logo, err := database.GetLogo(teacherID)
+    if err != nil {
+        http.Error(w, "Error retrieving the logo from the database", http.StatusInternalServerError)
+        return
+    }
+
+    w.Header().Set("Content-Type", "image/jpeg")
+    w.Write(logo)
 }

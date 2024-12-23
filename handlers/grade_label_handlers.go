@@ -1,3 +1,4 @@
+// handlers/grade_label_handlers.go
 package handlers
 
 import (
@@ -45,11 +46,28 @@ func CreateGradeLabel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = database.CreateGradeLabel(&gradeLabel)
+	// Check if the grade label is empty
+	if gradeLabel.Label == "" {
+		http.Error(w, createJSONError("Grade label cannot be empty", "Missing label"), http.StatusBadRequest)
+		return
+	}
+
+	// Check if the ID is provided (created offline)
+	if gradeLabel.ID > 0 {
+		// Insert grade label with provided ID
+		err = database.CreateGradeLabelWithID(&gradeLabel)
+	} else {
+		// No ID provided, insert normally (created online)
+		err = database.CreateGradeLabel(&gradeLabel)
+	}
+
 	if err != nil {
+		log.Printf("Error creating grade label: %v", err)
 		http.Error(w, createJSONError("Failed to create grade label", err.Error()), http.StatusInternalServerError)
 		return
 	}
+
+	log.Printf("Grade label created successfully with ID: %d", gradeLabel.ID)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)

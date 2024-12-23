@@ -390,3 +390,58 @@ li:last-child {
     padding: 10px 20px;
     font-size: 16px;
 }
+
+
+/* functionality to highlight the Academic Period Dropdown in case the user hasn't select an Academic Period before clicking on Avrage Button */
+.highlight-dropdown {
+    border: 2px solid red; /* Highlight border */
+    background-color: #f8d7da; /* Light red background */
+    animation: shake 0.5s; /* Optional shake animation */
+}
+
+/* Optional: Define shake animation */
+@keyframes shake {
+    0% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    50% { transform: translateX(5px); }
+    75% { transform: translateX(-5px); }
+    100% { transform: translateX(0); }
+}
+
+/* Logo */
+
+.upload-logo-container {
+    margin: 20px;
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+}
+
+.upload-logo-container h2 {
+    margin-bottom: 10px;
+}
+
+.upload-logo-container form {
+    display: flex;
+    flex-direction: column;
+}
+
+.upload-logo-container input[type="file"] {
+    margin-bottom: 10px;
+}
+
+.upload-logo-container button {
+    align-self: flex-start;
+    padding: 5px 10px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+.upload-logo-container button:hover {
+    background-color: #0056b3;
+}
+

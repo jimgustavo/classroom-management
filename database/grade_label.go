@@ -5,6 +5,7 @@ package database
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"log"
 
 	"github.com/jimgustavo/classroom-management/models"
@@ -57,6 +58,22 @@ func CreateGradeLabel(gradeLabel *models.GradeLabel) error {
 	return nil
 }
 
+// CreateGradeLabelWithID inserts a new grade label with a specific ID into the database
+func CreateGradeLabelWithID(gradeLabel *models.GradeLabel) error {
+	if db == nil {
+		return errors.New("database connection is not initialized")
+	}
+
+	query := "INSERT INTO grade_labels (id, label, date, skill, teacher_id) VALUES ($1, $2, $3, $4, $5)"
+	_, err := db.Exec(query, gradeLabel.ID, gradeLabel.Label, gradeLabel.Date, gradeLabel.Skill, gradeLabel.TeacherID)
+	if err != nil {
+		log.Printf("Error inserting grade label with ID: %v", err)
+		return err
+	}
+
+	return nil
+}
+
 // GetAllGradeLabels retrieves all grade labels from the database
 func GetAllGradeLabels() ([]models.GradeLabel, error) {
 	query := "SELECT id, label, date, skill FROM grade_labels"
@@ -102,10 +119,39 @@ func UpdateGradeLabel(gradeLabel *models.GradeLabel) error {
 	return nil
 }
 
+/*
+	func DeleteGradeLabel(id string) error {
+		// Delete associated grades first
+		gradeDeleteQuery := "DELETE FROM grades WHERE label_id = $1"
+		_, err := db.Exec(gradeDeleteQuery, id)
+		if err != nil {
+			log.Printf("Error deleting grades associated with grade label id %s: %v", id, err)
+			return err
+		}
+
+		// Delete the grade label
+		labelDeleteQuery := "DELETE FROM grade_labels WHERE id = $1"
+		_, err = db.Exec(labelDeleteQuery, id)
+		if err != nil {
+			log.Printf("Error deleting grade label with id %s: %v", id, err)
+			return err
+		}
+		return nil
+	}
+*/
+
 func DeleteGradeLabel(id string) error {
-	// Delete associated grades first
+	// Corrected query to use the correct column name
+	labelSubjectDeleteQuery := "DELETE FROM grade_labels_subjects WHERE grade_label_id = $1" // Ensure the column name is correct
+	_, err := db.Exec(labelSubjectDeleteQuery, id)
+	if err != nil {
+		log.Printf("Error deleting entries in grade_labels_subjects associated with grade label id %s: %v", id, err)
+		return fmt.Errorf("cannot delete grade label because it is assigned to a subject. please remove the assignment first")
+	}
+
+	// Delete associated grades
 	gradeDeleteQuery := "DELETE FROM grades WHERE label_id = $1"
-	_, err := db.Exec(gradeDeleteQuery, id)
+	_, err = db.Exec(gradeDeleteQuery, id)
 	if err != nil {
 		log.Printf("Error deleting grades associated with grade label id %s: %v", id, err)
 		return err
@@ -118,6 +164,7 @@ func DeleteGradeLabel(id string) error {
 		log.Printf("Error deleting grade label with id %s: %v", id, err)
 		return err
 	}
+
 	return nil
 }
 

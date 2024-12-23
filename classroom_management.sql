@@ -35,6 +35,7 @@ CREATE TABLE teacher_data (
 CREATE TABLE classrooms (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255),
+    --academic_period VARCHAR(255),
     teacher_id INT REFERENCES teachers(id)
 );
 
@@ -139,6 +140,13 @@ CREATE TABLE academic_period_terms (
     academic_period_id INT REFERENCES academic_periods(id) ON DELETE CASCADE,
     term_id INT REFERENCES terms(id) ON DELETE CASCADE,
     PRIMARY KEY (academic_period_id, term_id)
+);
+
+CREATE TABLE logos (
+    id SERIAL PRIMARY KEY,
+    teacher_id INT NOT NULL,
+    logo BYTEA NOT NULL,
+    FOREIGN KEY (teacher_id) REFERENCES teachers(id)
 );
 
 -- classroom_management_indexes.sql

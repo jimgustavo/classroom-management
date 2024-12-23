@@ -109,13 +109,20 @@ function generateGradesGrid(gridElement, students, averagesData, subjectID) {
             studentAverage.averages.forEach(termAverage => {
                 const termAverageCell = row.insertCell();
                 termAverageCell.contentEditable = false;
-                termAverageCell.textContent = termAverage.average.toFixed(2);
 
                 const factorAverageCell = row.insertCell();
                 factorAverageCell.contentEditable = false;
+
+                // Update: Check if reinforcement is included and append (R.A.)
+                if (termAverage.label === 'includes_reinforcement') {
+                    termAverageCell.textContent = `${termAverage.average.toFixed(2)} (R.A.)`;
+                } else {
+                    termAverageCell.textContent = termAverage.average.toFixed(2);
+                }
+                
                 factorAverageCell.textContent = termAverage.ave_factor.toFixed(2);
             });
-
+            
             // Display partial averages
             const partialAverage1Cell = row.insertCell();
             partialAverage1Cell.textContent = studentAverage.partial_ave_1.toFixed(2);

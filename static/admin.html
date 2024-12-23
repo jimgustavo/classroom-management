@@ -32,35 +32,12 @@
                 <div class="hero-content">
             </section>
                              
-            <section id="teachers">
-                <h2>Teachers</h2>      
-                <div class="section-container">
-                    <ul id="teachers-list">
-                        <!-- Teachers will be dynamically added here -->
-                    </ul>
-                </div>
-                <div class="section-container-inputs">
-                    <!-- Search bar for filtering teachers -->
-                    <input type="text" id="teacher-search-bar" placeholder="Search for a teacher by name or ID or email">
-
-                    <!-- Dropdown for selecting a role -->
-                    <select id="role-dropdown">
-                        <option value="teacher">Teacher</option>
-                        <option value="proteacher">ProTeacher</option>
-                    </select>
-
-                    <!-- Button to assign role -->
-                    <button id="assign-role-btn">Assign Role</button>
-                </div>
-            </section>
-
             <section id="classrooms">
                 <h2>Classrooms</h2>      
                     <div id="classroom-container" class="classroom-container">
                         <!-- Classrooms cards will be dynamically added here -->
                     </div>
             </section>
-
 
             <section id="academicPeriods">
                 <h2>Academic Periods</h2>
@@ -109,13 +86,35 @@
                     </form>
                 </div>
             </section>
+                <!-- Teachers Section -->
+            <section id="teachers">
+                <h2>Teachers</h2>      
+                <div class="section-container">
+                    <ul id="teachers-list" class="scrollable-list">
+                        <!-- Teachers will be dynamically added here -->
+                    </ul>
+                </div>
+                <div class="section-container-inputs">
+                    <!-- Search bar for filtering teachers -->
+                    <input type="text" id="teacher-search-bar" placeholder="Search for a teacher by name or ID or email">
+
+                    <!-- Dropdown for selecting a role -->
+                    <select id="role-dropdown">
+                        <option value="teacher">Teacher</option>
+                        <option value="proteacher">ProTeacher</option>
+                    </select>
+
+                    <!-- Button to assign role -->
+                    <button id="assign-role-btn">Assign Role</button>
+                </div>
+            </section>
             <!-- TeacherData Section -->
-        <section id="teacherdata">
-        <h2 id="teacher-data-h2">Teacher Data</h2>
-            <div id="teacherdata-container" class="section-container">
-                <!-- TeacherData entries will be dynamically added here -->
-            </div>
-    </section>
+            <section id="teacherdata">
+                <h2 id="teacher-data-h2">Teacher Data</h2>
+                    <div id="teacherdata-container" class="section-container">
+                        <!-- TeacherData entries will be dynamically added here -->
+                    </div>
+            </section>
              <!-- Modal Structure -->
             <div id="modal" class="modal">
                 <div class="modal-content">

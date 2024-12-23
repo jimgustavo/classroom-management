@@ -197,8 +197,23 @@
                 <input type="text" id="teacher-inspector" name="teacher-inspector" required> <br/>
                 <button type="submit">Add Data</button>
             </form>
-        </div>
+        </div>       
     </section>
+    
+    <!-- Logo -->
+    <div class="upload-logo-container">
+        <h2>Upload Logo</h2>
+        <div id="logo-container"></div>
+        <form id="upload-logo-form" enctype="multipart/form-data">
+            <input type="file" name="logo" accept="image/*" required>
+            <button type="submit">Upload</button>
+        </form>
+    </div>
+    <script>
+        document.getElementById('upload-logo-form').addEventListener('submit', uploadLogo);
+        document.addEventListener('DOMContentLoaded', displayLogo);
+    </script>
+
     <!-- Reports Section -->
     <section id="reports">
         <h2>Reports</h2>      

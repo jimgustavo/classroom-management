@@ -51,6 +51,15 @@ function displayTeachers(teachers) {
         const li = document.createElement("li");
         li.textContent = `ID: ${teacher.id} Email: ${teacher.email} Name: ${teacher.name} Role: ${teacher.role}`;
 
+        // Create button to display teacher data
+        const displayBtn = document.createElement("button");
+        displayBtn.textContent = "Display Teacher Data";
+        displayBtn.classList.add("display-teacher-data-btn");
+        displayBtn.dataset.teacherId = teacher.id; // Store teacher ID in data attribute
+
+         // Attach click event listener to display button
+        displayBtn.addEventListener("click", handleDisplayTeacherDataClick);
+
         // Create delete button
         const deleteBtn = document.createElement("button");
         deleteBtn.textContent = "Delete";
@@ -61,6 +70,7 @@ function displayTeachers(teachers) {
             deleteTeacher(teacher.id); // Assuming each term has an 'id' property
         });
 
+        li.appendChild(displayBtn);
         li.appendChild(deleteBtn);
         teachersList.appendChild(li);
     });
@@ -161,20 +171,52 @@ async function logout() {
     }
 }
 
-async function fetchTeacherData() {
-    const token = localStorage.getItem("token");
-    try {
-        const response = await fetch(`/admin/teacherdata`, {
-            headers: {
-                "Authorization": `Bearer ${token}`
-            }
+// Add a variable to track the visibility state
+let teacherDataVisible = false;
+const teacherDataContainer = document.getElementById("teacherdata-container");
+
+//Initially hide the container
+teacherDataContainer.style.display = "none";
+
+function handleDisplayTeacherDataClick(event) {
+    const button = event.target;
+    const teacherId = button.dataset.teacherId;
+
+    fetchTeacherData(teacherId);
+
+    // Toggle visibility
+    teacherDataVisible = !teacherDataVisible;
+    teacherDataContainer.style.display = teacherDataVisible ? "block" : "none";
+
+    //Update the button text based on visibility
+    button.textContent = teacherDataVisible ? "Hide Teacher Data" : "Display Teacher Data";
+
+}
+
+  async function fetchTeacherData(teacherId) {
+    const existingData = allTeachers.find(teacher => teacher.id === teacherId);
+    if (existingData) {
+      displayTeacherData(existingData); // Use existing data if available
+    } else {
+      // Existing data not found, fetch from API
+      const token = localStorage.getItem("token");
+      try {
+        const response = await fetch(`/admin/teacherdata/${teacherId}`, {
+          headers: {
+            "Authorization": `Bearer ${token}`
+          }
         });
         const teacherData = await response.json();
         displayTeacherData(teacherData);
-    } catch (error) {
+      } catch (error) {
         console.error("Error fetching teacher data:", error);
+        // Optionally display an error message to the user
+        const teacherDataContainer = document.getElementById("teacherdata-container");
+        teacherDataContainer.innerHTML = `<p style="color: red;">Click on a teacher or User hasn't added his/her teacher data yet</p>`;
+        teacherDataContainer.style.display = "block"; // Make sure it's visible to show the error
+      }
     }
-}
+  }
 
 function displayTeacherData(teacherData) {
     const teacherDataContainer = document.getElementById("teacherdata-container");

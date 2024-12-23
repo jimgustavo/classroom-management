@@ -22,7 +22,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                     'Authorization': `Bearer ${localStorage.getItem("token")}` 
                 }
             }),
-            fetch(`/classroom/${classroomID}/averageswithreinforcement?bimestre_1=0.8&sumativa_1=0.2&bimestre_2=0.8&sumativa_2=0.2`, {
+            fetch(`/classroom/${classroomID}/averageswithreinforcement?bimestre_1=0.7&sumativa_1=0.3&bimestre_2=0.7&sumativa_2=0.3`, {
                 method: 'GET', 
                 headers: {
                     "Content-Type": "application/json",
@@ -73,6 +73,77 @@ function generateGradesGrid(gridElement, students, averagesData, subjectID) {
 
     // Assuming terms are consistent across subjects
     const terms = averagesData.averages[0].averages.map(avg => avg.term);
+
+    terms.forEach(term => {
+        const termHeaderCell = headerRow.insertCell();
+        termHeaderCell.textContent = term;
+        
+        const averageFactorHeaderCell = headerRow.insertCell();
+        averageFactorHeaderCell.textContent = `%`;
+    });
+
+    // Add partial and final average headers
+    const partialAverage1HeaderCell = headerRow.insertCell();
+    partialAverage1HeaderCell.textContent = `Partial Average 1`;
+
+    const partialAverage2HeaderCell = headerRow.insertCell();
+    partialAverage2HeaderCell.textContent = `Partial Average 2`;
+
+    const finalAverageHeaderCell = headerRow.insertCell();
+    finalAverageHeaderCell.textContent = `Final Average`;
+
+    students.forEach((student, index) => {
+        const row = gridElement.insertRow();
+
+        const numberCell = row.insertCell();
+        numberCell.textContent = index + 1;
+
+        const nameCell = row.insertCell();
+        nameCell.textContent = student.name;
+
+        const studentAverage = averagesData.averages.find(a => a.student_id === student.id && a.subject_id === subjectID);
+        if (studentAverage) {
+            studentAverage.averages.forEach(termAverage => {
+                const termAverageCell = row.insertCell();
+                termAverageCell.contentEditable = false;
+
+                if (termAverage.label === 'includes_reinforcement') {
+                    termAverageCell.textContent = `${termAverage.average.toFixed(2)} (R.A.)`;
+                } else {
+                    termAverageCell.textContent = termAverage.average.toFixed(2);
+                }
+
+                const factorAverageCell = row.insertCell();
+                factorAverageCell.contentEditable = false;
+                factorAverageCell.textContent = termAverage.ave_factor.toFixed(2);
+            });
+
+            // Display partial averages
+            const partialAverage1Cell = row.insertCell();
+            partialAverage1Cell.textContent = studentAverage.partial_ave_1.toFixed(2);
+
+            const partialAverage2Cell = row.insertCell();
+            partialAverage2Cell.textContent = studentAverage.partial_ave_2.toFixed(2);
+
+            // Display final average
+            const finalAverageCell = row.insertCell();
+            finalAverageCell.textContent = studentAverage.term_ave.toFixed(2);
+        }
+    });
+}
+
+/*
+function generateGradesGrid(gridElement, students, averagesData, subjectID) {
+    const headerRow = gridElement.insertRow();
+
+    const numberHeaderCell = headerRow.insertCell();
+    numberHeaderCell.textContent = 'Number';
+
+    const nameHeaderCell = headerRow.insertCell();
+    nameHeaderCell.textContent = 'Student Name';
+
+    // Assuming terms are consistent across subjects
+    const terms = averagesData.averages[0].averages.map(avg => avg.term);
     
     terms.forEach(term => {
         const termHeaderCell = headerRow.insertCell();
@@ -82,8 +153,15 @@ function generateGradesGrid(gridElement, students, averagesData, subjectID) {
         averageFactorHeaderCell.textContent = `%`;
     });
 
-    const averageHeaderCell = headerRow.insertCell();
-    averageHeaderCell.textContent = `Final Average`;
+    // Add partial average headers before final average
+    const partialAverage1HeaderCell = headerRow.insertCell();
+    partialAverage1HeaderCell.textContent = `Partial Average 1`;
+
+    const partialAverage2HeaderCell = headerRow.insertCell();
+    partialAverage2HeaderCell.textContent = `Partial Average 2`;
+
+    const finalAverageHeaderCell = headerRow.insertCell();
+    finalAverageHeaderCell.textContent = `Final Average`;
 
     const includesReinforcementHeaderCell = headerRow.insertCell();
     includesReinforcementHeaderCell.textContent = 'Includes Reinforcement';
@@ -132,6 +210,13 @@ function generateGradesGrid(gridElement, students, averagesData, subjectID) {
             }
         });
 
+        // Display partial averages
+        const partialAverage1Cell = row.insertCell();
+        partialAverage1Cell.textContent = (totalAverage / termCount).toFixed(2);
+
+        const partialAverage2Cell = row.insertCell();
+        partialAverage2Cell.textContent = (totalAverage / termCount).toFixed(2);
+
         const finalAverageCell = row.insertCell();
         const finalAverage = termCount > 0 ? (totalAverage / 2).toFixed(2) : '0.00';
         finalAverageCell.textContent = finalAverage;
@@ -140,6 +225,7 @@ function generateGradesGrid(gridElement, students, averagesData, subjectID) {
         includesReinforcementCell.textContent = includesReinforcement ? 'Yes' : 'No';
     });
 }
+*/
 
 /*
 document.addEventListener("DOMContentLoaded", async () => {

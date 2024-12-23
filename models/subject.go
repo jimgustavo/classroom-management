@@ -1,7 +1,7 @@
 // models/subject.go
 package models
 
-// Subject represents a subject entity
+// Subject represents a subject with its ID, name, and associated teacher ID.
 type Subject struct {
 	ID        int    `json:"id"`
 	Name      string `json:"name"`

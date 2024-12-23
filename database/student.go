@@ -25,6 +25,24 @@ func CreateStudent(student *models.Student) error {
 	return nil
 }
 
+// CreateStudentWithID inserts a new student record with a specific ID into the database
+func CreateStudentWithID(student *models.Student) error {
+	if db == nil {
+		return errors.New("database connection is not initialized")
+	}
+
+	// Insert student with the provided ID
+	query := "INSERT INTO students (id, name, classroom_id, teacher_id) VALUES ($1, $2, $3, $4)"
+	_, err := db.Exec(query, student.ID, student.Name, student.ClassroomID, student.TeacherID)
+
+	if err != nil {
+		log.Printf("Error inserting student with ID: %v", err)
+		return err
+	}
+
+	return nil
+}
+
 func GetStudentsByTeacherID(teacherID int) ([]models.Student, error) {
 	if db == nil {
 		return nil, errors.New("database connection is not initialized")

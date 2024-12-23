@@ -1,5 +1,4 @@
 // database/classroom.go
-
 package database
 
 import (
@@ -17,6 +16,7 @@ func GetClassroomsByTeacherID(teacherID int) ([]models.Classroom, error) {
 	}
 
 	query := "SELECT id, name, teacher_id FROM classrooms WHERE teacher_id = $1"
+
 	rows, err := db.Query(query, teacherID)
 	if err != nil {
 		log.Println("Error executing query:", err)
@@ -52,6 +52,27 @@ func CreateClassroom(classroom *models.Classroom) error {
 
 	query := "INSERT INTO classrooms (name, teacher_id) VALUES ($1, $2) RETURNING id"
 	err := db.QueryRow(query, classroom.Name, classroom.TeacherID).Scan(&classroom.ID)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// CreateClassroomWithID inserts a new classroom record with a specific ID into the database
+func CreateClassroomWithID(classroom *models.Classroom) error {
+	// Log the request method and endpoint hit
+	log.Println("received request for CreateClassroomWithID")
+
+	if db == nil {
+		return errors.New("database connection is not initialized")
+	}
+
+	// Insert classroom with a provided ID
+	query := "INSERT INTO classrooms (id, name, teacher_id) VALUES ($1, $2, $3)"
+	_, err := db.Exec(query, classroom.ID, classroom.Name, classroom.TeacherID)
+
 	if err != nil {
 		return err
 	}

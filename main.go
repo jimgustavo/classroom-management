@@ -15,7 +15,13 @@ func enableCors(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		// Adjust this header to include the necessary fields
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept")
+		// Handle preflight requests
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
 		next.ServeHTTP(w, r)
 	})
 }
@@ -30,13 +36,21 @@ func main() {
 	// Initialize router
 	router := mux.NewRouter()
 
-	// Public routes
+	// Apply CORS middleware to the main router
+	router.Use(enableCors)
+
+	//////////////////////////// Public routes ///////////////////////////////////
 	router.HandleFunc("/login", handlers.Login).Methods("POST")
 	router.HandleFunc("/signup", handlers.SignUp).Methods("POST")
 	router.HandleFunc("/logout", handlers.Logout)
 	// Grades routes
 	router.HandleFunc("/classroom/{classroomID}/grades/get", handlers.GetGradesByClassroomID).Methods("GET")
 	router.HandleFunc("/classroom/{classroomID}/terms/{termID}/grades", handlers.GetGradesByClassroomIDAndTermID).Methods("GET")
+	router.HandleFunc("/grades/{classroomID}/below-seven", handlers.GetGradesBelowSevenByClassroomID).Methods("GET")
+	// Grade labels
+	router.HandleFunc("/subjects/teacher/{teacherID}", handlers.GetSubjectsByTeacherID).Methods("GET")
+	router.HandleFunc("/subjects/{id}", handlers.GetSubject).Methods("GET")
+	router.HandleFunc("/grade-labels/teacher/{teacherID}", handlers.GetGradeLabelsByTeacherID).Methods("GET")
 	// Reinforcement grades routes
 	router.HandleFunc("/grade-labels/reinforcement", handlers.GetAllReinforcementGradeLabels).Methods("GET")
 	router.HandleFunc("/grade-labels/reinforcement/teacher/{teacherID}", handlers.GetReinforcementGradeLabelsByTeacher).Methods("GET")
@@ -46,6 +60,11 @@ func main() {
 	router.HandleFunc("/classroom/{classroomID}/averageswithfactors", handlers.GetAveragesWithFactorsByClassroomID).Methods("GET")
 	router.HandleFunc("/classroom/{classroomID}/averageswithreinforcement", handlers.GetAveragesWithReinforcementByClassroomID).Methods("GET")
 	router.HandleFunc("/classroom/{classroomID}/averageswithfactors_trimesters", handlers.GetAveragesWithFactorsByClassroomIDForTrimesters).Methods("GET")
+	// Classroom and Academic Periods:
+	router.HandleFunc("/academic_periods", handlers.GetAllAcademicPeriodsHandler).Methods("GET")
+	router.HandleFunc("/classrooms/teacher/{teacherID}", handlers.GetClassroomsByTeacherID).Methods("GET")
+	// PDF REPORTS routes
+	router.HandleFunc("/pdfminute/teacher/{teacherID}/classroom/{classroomID}/student/{studentID}", handlers.GenerateReportHandler).Methods("GET")
 	// XLSX REPORTS routes
 	router.HandleFunc("/xlsx-report/teachers/{teacherID}/classrooms/{classroomID}/academicPeriod/{academicPeriodID}/terms/{termID}", handlers.GenerateTeacherGradesReport).Methods("GET")
 	router.HandleFunc("/xlsx-average/teachers/{teacherID}/classrooms/{classroomID}/academicPeriod/{academicPeriodID}", handlers.GenerateFinalAveragesReport).Methods("GET")
@@ -55,7 +74,11 @@ func main() {
 	router.HandleFunc("/teacherdata/{id}", handlers.GetTeacherDataByIDHandler).Methods("GET")
 	router.HandleFunc("/teacherdata/{id}", handlers.UpdateTeacherDataHandler).Methods("PUT")
 	router.HandleFunc("/teacherdata/{id}", handlers.DeleteTeacherDataHandler).Methods("DELETE")
-	// Admin routes
+	// Logo
+	router.HandleFunc("/upload-logo/{teacherID}", handlers.UploadLogoHandler).Methods("POST")
+    router.HandleFunc("/display-logo/{teacherID}", handlers.DisplayLogoHandler).Methods("GET")
+	router.HandleFunc("/display-logo-as-picture/{teacherID}", handlers.DisplayLogoHandlerAsPicture).Methods("GET")
+	/////////////////////////////// Admin routes ///////////////////////////////////////
 	adminRouter := router.PathPrefix("/admin").Subrouter()
 	adminRouter.Use(middleware.Authenticate)
 	adminRouter.Use(middleware.AdminOnly)
@@ -63,6 +86,7 @@ func main() {
 	adminRouter.HandleFunc("/teachers", handlers.GetAllTeachersHandler).Methods("GET")
 	adminRouter.HandleFunc("/teacher/{id}", handlers.DeleteTeacherHandler).Methods("DELETE")
 	adminRouter.HandleFunc("/teacherdata", handlers.GetAllTeacherDataHandler).Methods("GET")
+	adminRouter.HandleFunc("/teacherdata/{teacherID}", handlers.GetTeacherDataByTeacherIDHandler).Methods("GET")
 	adminRouter.HandleFunc("/teacher/{id}/role/{role}", handlers.UpdateTeacherRoleHandler).Methods("PUT")
 	// Academic Period routes
 	adminRouter.HandleFunc("/academic_periods", handlers.CreateAcademicPeriodHandler).Methods("POST")
@@ -82,14 +106,14 @@ func main() {
 	adminRouter.HandleFunc("/subjects", handlers.GetAllSubjects).Methods("GET")
 	adminRouter.HandleFunc("/grade-labels", handlers.GetAllGradeLabels).Methods("GET")
 
-	// ProTeacher routes
+	//////////////////////////////////// ProTeacher routes //////////////////////////////
 	proTeacherRouter := router.PathPrefix("/proteacher").Subrouter()
 	proTeacherRouter.Use(middleware.Authenticate)
 	proTeacherRouter.Use(middleware.ProTeacherOnly)
 	// PDF REPORT
 	proTeacherRouter.HandleFunc("/pdfminute/teacher/{teacherID}/classroom/{classroomID}/student/{studentID}", handlers.GenerateReportHandler).Methods("GET")
 
-	// Regular teacher routes (protected)
+	/////////////////////////////////// Regular teacher routes (protected) ///////////////////
 	apiRouter := router.PathPrefix("/api").Subrouter()
 	apiRouter.Use(middleware.Authenticate)
 	// Classroom routes
@@ -127,6 +151,7 @@ func main() {
 	apiRouter.HandleFunc("/subjects/{subjectID}/grade-labels/{gradeLabelID}/terms/{termID}", handlers.RemoveGradeLabelFromSubjectByTerm).Methods("DELETE")
 	// Grade Labels routes
 	apiRouter.HandleFunc("/grade-labels/teacher/{teacherID}", handlers.GetGradeLabelsByTeacherID).Methods("GET")
+	apiRouter.HandleFunc("/grade-labels/{id}", handlers.GetGradeLabel).Methods("GET")
 	apiRouter.HandleFunc("/grade-labels", handlers.CreateGradeLabel).Methods("POST")
 	apiRouter.HandleFunc("/grade-labels/{id}", handlers.UpdateGradeLabel).Methods("PUT")
 	apiRouter.HandleFunc("/grade-labels/{id}", handlers.DeleteGradeLabel).Methods("DELETE")
@@ -146,16 +171,25 @@ func main() {
 
 	// Start the HTTP server
 	log.Println("Server started on port 8080")
-	log.Fatal(http.ListenAndServe(":8080", enableCors(router)))
+	log.Fatal(http.ListenAndServe(":8080", router))
 }
 
 /*
 
 	ROUTES NOT USED FOR NOW:
-	apiRouter.HandleFunc("/subjects/{id}", handlers.GetSubject).Methods("GET")
-	apiRouter.HandleFunc("/grade-labels/{id}", handlers.GetGradeLabel).Methods("GET")
 	apiRouter.HandleFunc("/terms/{id}", handlers.GetTerm).Methods("GET")
 
+/////////////Simle Cors Implementation/////////////////////
+func enableCors(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		next.ServeHTTP(w, r)
+	})
+}
+
+//log.Fatal(http.ListenAndServe(":8080", enableCors(router)))
 
 ///////////Postgres Database//////////
 psql

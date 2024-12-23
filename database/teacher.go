@@ -224,51 +224,23 @@ func DeleteTeacherData(db *sql.DB, id int) error {
 	return err
 }
 
-/*
-func AuthenticateTeacher(email, password string) (int, error) {
-	if db == nil {
-		return 0, errors.New("database connection is not initialized")
-	}
-
-	var (
-		id             int
-		hashedPassword string
-	)
-
-	// Retrieve the hashed password and ID from the database
-	query := `SELECT id, password FROM teachers WHERE email = $1`
-	err := db.QueryRow(query, email).Scan(&id, &hashedPassword)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			log.Println("Teacher not found")
-			return 0, errors.New("teacher not found")
-		}
-		log.Println("Error retrieving teacher from database:", err)
-		return 0, err
-	}
-
-	log.Println("Email:", email)
-	log.Println("Generated hashed password:", string(hashedPassword))
-	log.Println("Retrieved hashed password:", hashedPassword)
-	log.Println("Generated hashed password length:", len(hashedPassword))
-	log.Println("Retrieved hashed password length:", len(hashedPassword))
-
-	// Trim both hashed passwords
-	trimmedGeneratedHashedPassword := strings.TrimSpace(hashedPassword)
-	trimmedProvidedPassword := strings.TrimSpace(password)
-
-	log.Println("Trimmed generated hashed password:", trimmedGeneratedHashedPassword)
-	log.Println("Trimmed provided password:", trimmedProvidedPassword)
-
-	// Compare the trimmed hashed password with the provided password
-	err = bcrypt.CompareHashAndPassword([]byte(trimmedGeneratedHashedPassword), []byte(trimmedProvidedPassword))
-	if err != nil {
-		log.Println("Error comparing password hash:", err)
-		return 0, errors.New("invalid credentials")
-	}
-
-	log.Println("Authentication successful for teacher with ID:", id)
-
-	return id, nil
+func SaveLogo(teacherID int, fileBytes []byte) error {
+    query := `
+        INSERT INTO logos (teacher_id, logo)
+        VALUES ($1, $2)
+        ON CONFLICT (teacher_id)
+        DO UPDATE SET logo = EXCLUDED.logo`
+    _, err := db.Exec(query, teacherID, fileBytes)
+    if err != nil {
+        fmt.Println("Database error:", err)
+    }
+    return err
 }
-*/
+
+
+func GetLogo(teacherID int) ([]byte, error) {
+    var logo []byte
+    query := `SELECT logo FROM logos WHERE teacher_id = $1`
+    err := db.QueryRow(query, teacherID).Scan(&logo)
+    return logo, err
+}

@@ -1,3 +1,4 @@
+// handlers/subject_handlers.go
 package handlers
 
 import (
@@ -50,7 +51,15 @@ func CreateSubject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = database.CreateSubject(&subject)
+	// Check if the ID is provided
+	if subject.ID > 0 {
+		// Attempt to insert subject with the provided ID
+		err = database.CreateSubjectWithID(&subject)
+	} else {
+		// If no ID is provided, use the existing logic
+		err = database.CreateSubject(&subject)
+	}
+
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

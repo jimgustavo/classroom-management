@@ -326,3 +326,10 @@ li:last-child {
     padding: 10px 20px;
     font-size: 16px;
 }
+
+.scrollable-list {
+    max-height: 300px; /* Adjust as needed */
+    overflow-y: auto;
+    border: 1px solid #ccc; /* Optional: Add a border for better visibility */
+    padding: 5px; /* Optional: Add some padding */
+}

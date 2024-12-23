@@ -1,5 +1,4 @@
 // handlers/grade_handlers.go
-
 package handlers
 
 import (
@@ -154,4 +153,36 @@ func GetGradesByClassroomIDAndTermID(w http.ResponseWriter, r *http.Request) {
 	w.Write(responseData)
 
 	log.Println("Grades retrieved successfully")
+}
+
+// Handler function for fetching grades below 7 by classroom ID.
+func GetGradesBelowSevenByClassroomID(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	classroomID := vars["classroomID"]
+
+	id, err := strconv.Atoi(classroomID)
+	if err != nil {
+		http.Error(w, "Invalid classroom ID", http.StatusBadRequest)
+		return
+	}
+
+	gradesData, err := database.FetchGradesBelowSevenByClassroomID(id)
+	if err != nil {
+		http.Error(w, "Error fetching grades", http.StatusInternalServerError)
+		log.Printf("Error fetching grades: %v\n", err)
+		return
+	}
+
+	responseData, err := json.Marshal(gradesData)
+	if err != nil {
+		http.Error(w, "Error creating response", http.StatusInternalServerError)
+		log.Printf("Error creating response: %v\n", err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(responseData)
+
+	log.Println("Grades below seven retrieved successfully")
 }

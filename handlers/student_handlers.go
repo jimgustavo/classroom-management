@@ -1,3 +1,4 @@
+// handlers/student_handlers.go
 package handlers
 
 import (
@@ -13,6 +14,7 @@ import (
 	"github.com/xuri/excelize/v2"
 )
 
+/*
 // CreateStudent handles the creation of a new student
 func CreateStudent(w http.ResponseWriter, r *http.Request) {
 	var student models.Student
@@ -23,6 +25,33 @@ func CreateStudent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = database.CreateStudent(&student)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(student)
+}
+*/
+// CreateStudent handles the creation of a new student
+func CreateStudent(w http.ResponseWriter, r *http.Request) {
+	var student models.Student
+	err := json.NewDecoder(r.Body).Decode(&student)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Check if the ID is provided
+	if student.ID > 0 {
+		// Attempt to insert student with the provided ID
+		err = database.CreateStudentWithID(&student)
+	} else {
+		// If no ID is provided, use the existing logic
+		err = database.CreateStudent(&student)
+	}
+
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
