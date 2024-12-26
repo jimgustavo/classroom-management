@@ -1,0 +1,236 @@
+ <!-- static/main.html -->
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LICEN</title>
+    <link rel="stylesheet" href="main.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>LICEN</h1>
+            <nav>
+                <ul>
+                    <li><a href="#classrooms">Classrooms</a></li>
+                    <li><a href="#students">Students</a></li>
+                    <li><a href="#subjects">Subjects</a></li>
+                    <li><a href="#grade-labels">Grade Labels</a></li>
+                    <li><a href="#reports">Reports</a></li>
+                    <li id="teacher-nav-item"><a href="#teacherdata">Teacher</a></li>
+                    <li><button id="logout-btn">Logout</button></li>
+                </ul>
+            </nav>
+            <div id="profile-info" style="display: none;"></div>
+        </header>
+        <main>
+            
+            <section id="hero">
+                 <div class="background-image"></div> 
+                <div class="overlay"></div>
+                <div class="hero-content">
+            </section>
+
+            <select id="academicPeriodDropdown" onchange="handleAcademicPeriodChange()">
+                <option value="">Select Academic Period</option>
+            </select>
+                                        
+            <section id="classrooms">
+                <h2>Classrooms</h2>      
+                    <div id="classroom-container" class="classroom-container">
+                        <!-- Classrooms cards will be dynamically added here -->
+                    </div>
+
+                <div class="section-container-inputs">
+                    <form id="classroom-form" action="#" method="post">
+                        <label for="classroom-name">Classroom Name:</label>
+                        <input type="text" id="classroom-name" name="classroom-name" required> <br/>
+                        <button type="submit">Add a Classroom</button>
+                    </form>
+                </div>
+
+            </section>
+            <section id="students">
+                <h2>Students</h2> 
+                <div class="section-container">
+                    <ul id="student-list">
+                        <!-- Students will be dynamically added here -->
+                    </ul>
+                </div>
+                <div class="section-container-inputs">
+                        <form id="student-form" action="#" method="post">
+                            <label for="student-name">Student Full Name:</label>
+                            <input type="text" id="student-name" name="student-name" required>
+                            <label for="classroom-id">Select a Classroom:</label>
+                            <select id="classroom-assign-dropdown3" name="classroom-assign-dropdown3" required>
+                                <!-- Subjects will be dynamically added here -->
+                            </select>
+                            <br/>
+                            <button type="submit">Submit Student</button>
+                        </form> 
+                    <div>
+                        <form class="excel-parameters" id="upload-students-form" action="#" method="post">
+                            <label for="file-upload">UPLOAD STUDENTS FROM EXCEL:</label>
+                            <input type="file" id="file-upload" name="file-upload" accept=".xlsx,.xls" required>
+                    
+                            <!-- Hidden inputs for additional parameters -->
+                            <input type="" id="startCell" name="startCell" value="A1">
+                            <input type="" id="endCell" name="endCell" value="B10">
+                            <input type="" id="sheetName" name="sheetName" value="Sheet1">
+                
+                            <select id="classroom-assign-dropdown4" name="classroom-assign-dropdown4" required>
+                                <!-- Subjects will be dynamically added here -->
+                            </select>
+
+                            <button type="submit">Upload Students</button>
+                        </form>
+                    </div>
+                </div>
+            </section>
+            <section id="subjects">
+                <h2>Subjects</h2>
+                <div class="section-container">
+                    <ul id="subject-list">
+                        <!-- Subjects will be dynamically added here -->
+                    </ul>
+                </div>
+                <div class="section-container-inputs">
+                        <form id="subject-form" action="#" method="post">
+                            <label for="subject-name">Subject Name:</label>
+                            <input type="text" id="subject-name" name="subject-name" required> <br/>
+                            <button type="submit">Submit Subject</button>
+                        </form>
+                   
+                       
+                        <form id="assign-classroom-form">
+                            <label>ASSIGN SUBJECT TO CLASSROOM</label>
+                            <label for="classroom-assign-dropdown">Select a Classroom:</label>
+                            <select id="classroom-assign-dropdown" name="classroom-assign-dropdown" required>
+                                <!-- Subjects will be dynamically added here -->
+                            </select>
+                            <label for="subject-assign-dropdown2">Select a Subject:</label>
+                            <select id="subject-assign-dropdown2" required>
+                                <!-- Grade Labels will be dynamically added here -->
+                            </select> <br/>
+                            <button type="submit">Assign Subject</button>
+                        </form>
+                </div>
+            </section>
+            <section id="grade-labels">
+                <h2>Grade Labels</h2>
+                <div class="section-container">
+                    <ul id="grade-label-list">
+                        <!-- Students will be dynamically added here -->
+                    </ul>
+                </div>
+                <div class="section-container-inputs">
+                    <form id="grade-label-form">
+                        <label for="grade-label">Grade Label:</label>
+                        <input type="text" id="grade-label" required>
+
+                        <label for="grade-date">Date:</label>
+                        <input type="date" id="grade-date" required>
+
+                        <label for="grade-skill">Skill:</label>
+                        <input type="text" id="grade-skill" required> <br/>
+
+                        <button type="submit">Create Grade Label</button>
+                    </form>
+                    
+                    <form id="assign-grade-label-form">
+                        <label>ASSIGN GRADE LABEL TO SUBJECT</label>
+                        <label for="subject-assign-dropdown">Select a Subject:</label>
+                        <select id="subject-assign-dropdown" name="subject-assign-dropdown" required>
+                            <!-- Subjects will be dynamically added here -->
+                        </select>
+                        <label for="term-assign-dropdown">Select a Term:</label>
+                        <select id="term-assign-dropdown" name="term-assign-dropdown" required>
+                            <!-- Terms will be dynamically added here -->
+                        </select>
+                        <label for="grade-label-assign-dropdown">Select a Grade Label:</label>
+                        <select id="grade-label-assign-dropdown" required>
+                            <!-- Grade Labels will be dynamically added here -->
+                        </select> <br/>
+                        <button type="submit">Assign Grade Label</button>
+                    </form>
+                </div>
+            </section>
+            <!-- TeacherData Section -->
+    <section id="teacherdata">
+        <h2 id="teacher-data-h2">Teacher Data</h2>
+        <div id="teacherdata-container" class="section-container">
+            <!-- TeacherData entries will be dynamically added here -->
+        </div>
+        <div class="section-container-inputs">
+            <form id="teacherdata-form" action="#" method="post">
+                <label for="teacher-school">School:</label>
+                <input type="text" id="teacher-school" name="teacher-school" required>
+                <label for="teacher-school-year">School Year:</label>
+                <input type="text" id="teacher-school-year" name="teacher-school-year" required>
+                <label for="teacher-school-hours">School Hours:</label>
+                <input type="text" id="teacher-school-hours" name="teacher-school-hours" required>
+                <label for="teacher-country">Country:</label>
+                <input type="text" id="teacher-country" name="teacher-country" required>
+                <label for="teacher-city">City:</label>
+                <input type="text" id="teacher-city" name="teacher-city" required>
+                <label for="teacher-full-name">Full Name:</label>
+                <input type="text" id="teacher-full-name" name="teacher-full-name" required>
+                <label for="teacher-birthday">Birthday:</label>
+                <input type="date" id="teacher-birthday" required>
+                <label for="teacher-id-number">ID Number:</label>
+                <input type="text" id="teacher-id-number" name="teacher-id-number" required>
+                <label for="teacher-labor-relationship">Labor Dependency Relationship:</label>
+                <input type="text" id="teacher-labor-relationship" name="teacher-labor-relationship" required>
+                <label for="institutional-email">Institutional Email:</label>
+                <input type="email" id="institutional-email" name="institutional-email" placeholder="Email" required>
+                <label for="phone">Phone:</label>
+                <input type="text" id="phone" name="phone" required>
+                <label for="teacher-principal">Principal:</label>
+                <input type="text" id="teacher-principal" name="teacher-principal" required>
+                <label for="teacher-vice-principal">Vice Principal:</label>
+                <input type="text" id="teacher-vice-principal" name="teacher-vice-principal" required>
+                <label for="teacher-dece">DECE:</label>
+                <input type="text" id="teacher-dece" name="teacher-dece" required>
+                <label for="teacher-inspector">Inspector:</label>
+                <input type="text" id="teacher-inspector" name="teacher-inspector" required> <br/>
+                <button type="submit">Add Data</button>
+            </form>
+        </div>       
+    </section>
+    
+    <!-- Logo -->
+    <div class="upload-logo-container">
+        <h2>Upload Logo</h2>
+        <div id="logo-container"></div>
+        <form id="upload-logo-form" enctype="multipart/form-data">
+            <input type="file" name="logo" accept="image/*" required>
+            <button type="submit">Upload</button>
+        </form>
+    </div>
+    <script>
+        document.getElementById('upload-logo-form').addEventListener('submit', uploadLogo);
+        document.addEventListener('DOMContentLoaded', displayLogo);
+    </script>
+
+    <!-- Reports Section -->
+    <section id="reports">
+        <h2>Reports</h2>      
+        <button id="reports-btn" disabled>Go to Reports</button> 
+    </section>
+             <!-- Modal Structure -->
+            <div id="modal" class="modal">
+                <div class="modal-content">
+                    <span id="close-modal" class="close">&times;</span>
+                    <div id="modal-body"></div>
+                </div>
+            </div>
+        </main>
+        <footer>
+            <p>&copy; 2024 TaviTo services. All rights reserved.</p>
+        </footer>
+    </div>
+    <script src="main.js"></script>
+</body>
+</html>
